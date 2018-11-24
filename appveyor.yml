@@ -1,0 +1,35 @@
+image: Visual Studio 2017
+
+platform:
+- x64
+
+environment:
+  matrix:
+    - BUILD_TYPE: x86
+    - BUILD_TYPE: x64
+
+build_script:
+    - cd mecab\src
+    - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %BUILD_TYPE%
+    - nmake -f Makefile.%BUILD_TYPE%.msvc
+
+after_build:
+    - cd %APPVEYOR_BUILD_FOLDER%\
+    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\*.dll
+    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\*.exe
+    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\*.lib
+    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\mecab.h
+
+artifacts:
+  - path: '*.zip'
+    name: MeCab-MSVC
+deploy:
+  description: 'MeCab-MSVC'
+  provider: GitHub
+  auth_token:
+    secure: wk6H/7XYGdxa7T4A/k+PcHxWngTfJJYAMe2pFVFb7PnMV8vHRSXon9II4EyDomQy
+  artifact: MeCab-MSVC
+  draft: false
+  prerelease: false
+  on:
+    appveyor_repo_tag: true
