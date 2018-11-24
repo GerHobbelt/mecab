@@ -15,10 +15,10 @@ build_script:
 
 after_build:
     - cd %APPVEYOR_BUILD_FOLDER%\
-    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\*.dll
-    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\*.exe
-    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\*.lib
-    - 7z a mecab-ko-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\src\mecab.h
+    - 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\src\*.dll
+    - 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\src\*.exe
+    - 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\src\*.lib
+    - 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\src\mecab.h
 
 artifacts:
   - path: '*.zip'
