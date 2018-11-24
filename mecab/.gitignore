@@ -7,6 +7,8 @@
 *.pyc
 *.dll
 *.pdb
+*.lo
+*.log
 python/build
 python/dist
 python/*.egg-info
