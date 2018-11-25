@@ -1,5 +1,5 @@
 set PLATFORM_PREFIX=
-if "%BIULD_TYPE%"=="x64" set PLATFORM_PREFIX=-x64
+if "%BUILD_TYPE%"=="x64" set PLATFORM_PREFIX=-x64
 set _CL_=/utf-8
 
 mkdir dic\ipadic
