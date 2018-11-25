@@ -1,6 +1,8 @@
 set PLATFORM_PREFIX=
 if "%BIULD_TYPE"=="x64" set PLATFORM_PREFIX=-x64
 set _CL_=/utf-8
+set DISTUTILS_USE_SDK=1
+if "%BIULD_TYPE"=="x64" setenv /x64 /release
 
 mkdir dic\ipadic
 cd mecab\src
