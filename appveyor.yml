@@ -22,9 +22,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: wk6H/7XYGdxa7T4A/k+PcHxWngTfJJYAMe2pFVFb7PnMV8vHRSXon9II4EyDomQy
-  artifact:
-    - MeCab-MSVC
-    - MeCab-MSVC-wheel
+  artifact: MeCab-MSVC,MeCab-MSVC-wheel
   draft: false
   prerelease: false
   on:
