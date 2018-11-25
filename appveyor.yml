@@ -20,7 +20,7 @@ build_script:
 
 after_build:
     - cd %APPVEYOR_BUILD_FOLDER%\
-    - copy mecab-ipadic\dicrc dic\dicrc
+    - copy mecab-ipadic\dicrc dic\ipadic\dicrc
     - copy mecab-ipadic\*.def dic\ipadic\
     - copy mecab-ipadic\*.csv dic\ipadic\
     - 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\src\*.dll
