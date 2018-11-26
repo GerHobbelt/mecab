@@ -4,7 +4,7 @@ set _CL_=/utf-8
 
 mkdir dic\ipadic
 cd mecab\src
-call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %BUILD_TYPE%
+call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %BUILD_TYPE%
 nmake -f Makefile.%BUILD_TYPE%.msvc
 cd ..\..\
 mecab\src\mecab-dict-index.exe -d mecab-ipadic -o dic\ipadic -f EUC-JP -t UTF-8
@@ -23,6 +23,7 @@ copy mecab-ipadic\*.csv dic\ipadic\
 7z x mecab-msvc-%BUILD_TYPE%.zip -oc:\mecab
 
 cd mecab\python
+call :BuildPython C:\Python27%PLATFORM_PREFIX%
 call :BuildPython C:\Python35%PLATFORM_PREFIX%
 call :BuildPython C:\Python36%PLATFORM_PREFIX%
 call :BuildPython C:\Python37%PLATFORM_PREFIX%
