@@ -12,6 +12,7 @@ mecab\src\mecab-dict-index.exe -d mecab-ipadic -o dic\ipadic -f EUC-JP -t UTF-8
 rem Zip mecab binaries and ipadic
 cd %APPVEYOR_BUILD_FOLDER%\
 copy mecab-ipadic\dicrc dic\ipadic\dicrc
+copy mecab-ipadic\COPYING dic\ipadic\COPYING
 copy mecab-ipadic\*.def dic\ipadic\
 copy mecab-ipadic\*.csv dic\ipadic\
 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\src\*.dll
@@ -20,6 +21,9 @@ copy mecab-ipadic\*.csv dic\ipadic\
 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\src\mecab.h
 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\ci\win\mecabrc
 7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\dic
+7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\BSD
+7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\LGPL
+7z a mecab-msvc-%BUILD_TYPE%.zip %APPVEYOR_BUILD_FOLDER%\mecab\GPL
 7z x mecab-msvc-%BUILD_TYPE%.zip -oc:\mecab
 
 cd mecab\python
