@@ -1,0 +1,8 @@
+# artefacts of configure and make
+Makefile
+char.bin
+config.log
+config.status
+matrix.bin
+sys.dic
+unk.dic
