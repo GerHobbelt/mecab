@@ -1,3 +1,4 @@
+# products of configure and make
 Makefile
 a.out
 a.out.js
@@ -24,3 +25,8 @@ src/mecab-test-gen
 stamp-h1
 tests/Makefile
 libtool
+
+# compilation products of em++
+mecab.html
+mecab.js
+mecab.wasm
