@@ -42,3 +42,6 @@ initial
 16777216+51*1024*1024
 =70254592
 // 134217728 is known to work
+
+# todo:
+# minify

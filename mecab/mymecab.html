@@ -66,20 +66,43 @@
 		}
 
 		#output {
-        	width: 100%;
-        	height: 200px;
-        	margin: 0 auto;
-        	margin-top: 10px;
-        	border-left: 0px;
-        	border-right: 0px;
-        	padding-left: 0px;
-        	padding-right: 0px;
-        	display: block;
-        	background-color: black;
-        	color: white;
-        	font-family: 'Lucida Console', Monaco, monospace;
-        	outline: none;
-        }
+    	/*width: 100%;
+    	height: 200px;*/
+      width: 40em;
+      height: 10em;
+
+      border: black solid 1px;
+
+    	/*margin: 0 auto;
+    	margin-top: 10px;*/
+
+      border-width: 1px;
+
+    	/*border-left: 0px;
+    	border-right: 0px;*/
+    	padding-left: 0px;
+    	padding-right: 0px;
+    	display: block;
+    	/*background-color: black;
+    	color: white;*/
+    	font-family: 'Lucida Console', Monaco, monospace;
+    	outline: none;
+      overflow-y: scroll;
+      resize: both;
+    }
+
+    #input {
+      width: 40em;
+      height: 10em;
+    }
+
+    #args {
+      width: 40em;
+    }
+
+    form input,form textarea {
+      display: block;
+    }
 	</style>
 </head>
 <body>
@@ -91,26 +114,79 @@
     </div>
 
     
-    <div class="emscripten_border">
+    <!-- <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
-    </div>
-    <textarea id="output" rows="8"></textarea>
+    </div> -->
+    <form id="form">
+        <input id="args" name="args" value="-r mecabrc -o output.txt input.txt" placeholder="-r mecabrc -o output.txt input.txt">
+        <textarea id="input" name="input">すもももももももものうち</textarea>
+        <input id="submitter" type="submit">
+    </form>
+    <pre id="output"></pre>
 
     <script type='text/javascript'>
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
       var spinnerElement = document.getElementById('spinner');
+      let mecab_do;
+
+      document.getElementById('form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        console.log(arguments);
+        const args = document.getElementById('args').value;
+        const input = document.getElementById('input').value;
+        FS.writeFile('input.txt', `${input}\n`);
+        FS.writeFile('output.txt', "");
+        mecab_do(args);
+        const output = FS.readFile('output.txt', {encoding : "utf8"});
+        // console.log(output);
+        // document.getElementById('output').innerText = output;
+        // document.getElementById('output').insertAdjacentText('afterbegin', `${output.replace(/EOS\n$/, '')}\n`);
+        const outputElem = document.getElementById('output');
+        outputElem.insertAdjacentText('beforeend', `${output.replace(/EOS\n$/, '')}\n`);
+        outputElem.scrollTop = outputElem.scrollHeight
+      }, true);
 
       const dicdir = '/ipadic';
-      // let mecab_do;
 
       var Module = {
       	noInitialRun: true,
-      	onRuntimeInitialized: function() {
-          // FS.mkdir('/usr');
-          // FS.mkdir('/usr/local');
-          // FS.mkdir('/usr/local/etc');
-          // FS.writeFile('/usr/local/etc/mecabrc', `\
+      	// onRuntimeInitialized: function() {
+        //   // FS.mkdir('/usr');
+        //   // FS.mkdir('/usr/local');
+        //   // FS.mkdir('/usr/local/etc');
+        //   // FS.writeFile('/usr/local/etc/mecabrc', `\
+          
+        //   // const mecab_do = Module.cwrap('mecab_do2', 'number', ['string']);
+
+        //   const input = 'すもももももももものうち';
+        //   FS.writeFile('input.txt', `${input}\n`);
+        //   FS.writeFile('output.txt', "");
+
+        //   // const args = '--help';
+        //   // const args = '-o output.txt input.txt';
+        //   // const args = 'input.txt';
+        //   // const args = '-r mecabrc --help';
+        //   const args = '-r mecabrc input.txt';
+        //   // _mecab_do2(args);
+      		// mecab_do(args);
+
+        //   var output = FS.readFile('output.txt', {encoding : "utf8"});
+          // document.getElementById('form').dispatchEvent(new Event('submit'));
+      	// },
+        locateFile: function(path, prefix) {
+          console.log(path, prefix);
+          // // if it's a mem init file, use a custom dir
+          // if (path.endsWith(".mem")) return "https://mycdn.com/memory-init-dir/" + path;
+          // otherwise, use the default, the prefix (JS file's dir) + the path
+          return prefix + path;
+        },
+        preRun: [function() {
+          FS.createDataFile('/', 'input.txt',
+                    Module['intArrayFromString']('Input goes here.'), true,
+                    true);
+          FS.createDataFile('/', 'output.txt',
+                    'Output can be placed here (-o output.txt)', true, true);
           FS.writeFile('mecabrc', `\
 ;
 ; Configuration file of MeCab
@@ -128,35 +204,6 @@ dicdir = ${dicdir}
 ; bos-format = %S\n
 ; eos-format = EOS\n
 `);
-          const mecab_do = Module.cwrap('mecab_do2', 'number', ['string']);
-
-          const input = 'すもももももももものうち';
-          FS.writeFile('input.txt', `${input}\n`);
-          // FS.writeFile('output.txt', "");
-
-          // const args = '--help';
-          // const args = '-o output.txt input.txt';
-          // const args = 'input.txt';
-          // const args = '-r mecabrc --help';
-          const args = '-r mecabrc input.txt';
-          // _mecab_do2(args);
-      		mecab_do(args);
-
-          // var output = FS.readFile('output.txt', {encoding : "utf8"});
-      	},
-        locateFile: function(path, prefix) {
-          console.log(path, prefix);
-          // // if it's a mem init file, use a custom dir
-          // if (path.endsWith(".mem")) return "https://mycdn.com/memory-init-dir/" + path;
-          // otherwise, use the default, the prefix (JS file's dir) + the path
-          return prefix + path;
-        },
-        preRun: [function() {
-          FS.createDataFile('/', 'input.txt',
-                    Module['intArrayFromString']('Input goes here.'), true,
-                    true);
-          FS.createDataFile('/', 'output.txt',
-                    'Output can be placed here (-o output.txt)', true, true);
         }],
         // preInit: [function() {
         //   FS.mkdir(dicdir);
@@ -165,38 +212,47 @@ dicdir = ${dicdir}
         // }],
         postRun: [function() {
           mecab_do = Module.cwrap('mecab_do2', 'number', ['string']);
+          document.getElementById('submitter').click();
         }],
         print: (function() {
-          var element = document.getElementById('output');
-          if (element) element.value = ''; // clear browser cache
-          return function(text) {
-            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-            // These replacements are necessary if you render to raw HTML
-            //text = text.replace(/&/g, "&amp;");
-            //text = text.replace(/</g, "&lt;");
-            //text = text.replace(/>/g, "&gt;");
-            //text = text.replace('\n', '<br>', 'g');
-            console.log(text);
-            if (element) {
-              element.value += text + "\n";
-              element.scrollTop = element.scrollHeight; // focus on bottom
-            }
-          };
+          // var element = document.getElementById('output');
+          // if (element) element.value = ''; // clear browser cache
+          // return function(text) {
+          //   if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          //   // These replacements are necessary if you render to raw HTML
+          //   //text = text.replace(/&/g, "&amp;");
+          //   //text = text.replace(/</g, "&lt;");
+          //   //text = text.replace(/>/g, "&gt;");
+          //   //text = text.replace('\n', '<br>', 'g');
+          //   console.log(text);
+          //   if (element) {
+          //     element.value += text + "\n";
+          //     element.scrollTop = element.scrollHeight; // focus on bottom
+          //   }
+          // };
+            return function(text) {
+              if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+              console.log(text);
+              // FS.writeFile('output.txt', parts);
+              const outputElem = document.getElementById('output');
+              outputElem.insertAdjacentText('beforeend', `${text}\n`);
+              outputElem.scrollTop = outputElem.scrollHeight
+            };
         })(),
         printErr: function(text) {
           if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
           console.error(text);
         },
-        canvas: (function() {
-          var canvas = document.getElementById('canvas');
+        // canvas: (function() {
+        //   var canvas = document.getElementById('canvas');
 
-          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-          // application robust, you may want to override this behavior before shipping!
-          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+        //   // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+        //   // application robust, you may want to override this behavior before shipping!
+        //   // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+        //   canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
 
-          return canvas;
-        })(),
+        //   return canvas;
+        // })(),
         setStatus: function(text) {
           if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
           if (text === Module.setStatus.last.text) return;
