@@ -101,19 +101,23 @@
       var progressElement = document.getElementById('progress');
       var spinnerElement = document.getElementById('spinner');
 
+      const dicdir = '/ipadic';
+      // let mecab_do;
+
       var Module = {
       	noInitialRun: true,
       	onRuntimeInitialized: function() {
-          FS.mkdir('/usr');
-          FS.mkdir('/usr/local');
-          FS.mkdir('/usr/local/etc');
-          FS.writeFile('/usr/local/etc/mecabrc', `\
+          // FS.mkdir('/usr');
+          // FS.mkdir('/usr/local');
+          // FS.mkdir('/usr/local/etc');
+          // FS.writeFile('/usr/local/etc/mecabrc', `\
+          FS.writeFile('mecabrc', `\
 ;
 ; Configuration file of MeCab
 ;
 ; $Id: mecabrc.in,v 1.3 2006/05/29 15:36:08 taku-ku Exp $;
 ;
-dicdir =  /usr/local/lib/mecab/dic/ipadic
+dicdir = ${dicdir}
 
 ; userdic = /home/foo/bar/user.dic
 
@@ -124,7 +128,21 @@ dicdir =  /usr/local/lib/mecab/dic/ipadic
 ; bos-format = %S\n
 ; eos-format = EOS\n
 `);
-      		_mecab_do2(`--help`);
+          const mecab_do = Module.cwrap('mecab_do2', 'number', ['string']);
+
+          const input = 'すもももももももものうち';
+          FS.writeFile('input.txt', `${input}\n`);
+          // FS.writeFile('output.txt', "");
+
+          // const args = '--help';
+          // const args = '-o output.txt input.txt';
+          // const args = 'input.txt';
+          // const args = '-r mecabrc --help';
+          const args = '-r mecabrc input.txt';
+          // _mecab_do2(args);
+      		mecab_do(args);
+
+          // var output = FS.readFile('output.txt', {encoding : "utf8"});
       	},
         locateFile: function(path, prefix) {
           console.log(path, prefix);
@@ -133,8 +151,21 @@ dicdir =  /usr/local/lib/mecab/dic/ipadic
           // otherwise, use the default, the prefix (JS file's dir) + the path
           return prefix + path;
         },
-        preRun: [],
-        postRun: [],
+        preRun: [function() {
+          FS.createDataFile('/', 'input.txt',
+                    Module['intArrayFromString']('Input goes here.'), true,
+                    true);
+          FS.createDataFile('/', 'output.txt',
+                    'Output can be placed here (-o output.txt)', true, true);
+        }],
+        // preInit: [function() {
+        //   FS.mkdir(dicdir);
+        //   const remoteDicDir = 'ipadic';
+        //   FS.createPreloadedFile(dicdir, 'dicrc', `${remoteDicDir}/dicrc`, true, false);
+        // }],
+        postRun: [function() {
+          mecab_do = Module.cwrap('mecab_do2', 'number', ['string']);
+        }],
         print: (function() {
           var element = document.getElementById('output');
           if (element) element.value = ''; // clear browser cache

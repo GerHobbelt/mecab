@@ -30,3 +30,7 @@ libtool
 mecab.html
 mecab.js
 mecab.wasm
+mecab.data
+
+# my untidyness
+ipadic
