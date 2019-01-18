@@ -1,0 +1,8 @@
+# output of configure & make
+Makefile
+char.bin
+config.log
+config.status
+matrix.bin
+sys.dic
+unk.dic

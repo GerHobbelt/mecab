@@ -32,5 +32,11 @@ mecab.js
 mecab.wasm
 mecab.data
 
+# pre-compressed so that Apache doesn't have to gzip them every time
+mecab.js.gz
+mecab.wasm.gz
+mecab.data.gz
+
 # my untidyness
 ipadic
+naist-jdic

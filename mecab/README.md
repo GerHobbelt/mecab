@@ -8,18 +8,22 @@ That project was from 2014. I'm hoping to explore whether the flags can be made 
 
 ```bash
 git clone https://github.com/Birch-san/mecab.git
-cd mecab/mecab-ipadic
+cd mecab/mecab-naist-jdic-0.6.3b-20111013
 ./configure --with-charset=utf8 && make && sudo make install
 
 cd mecab/mecab
-mkdir -p ipadic
+mkdir -p naist-jdic
 # copy dictionary
-cp /usr/local/lib/mecab/dic/ipadic/**/* ipadic
+cp /usr/local/lib/mecab/dic/naist-jdic/**/* naist-jdic
 emconfigure ./configure --with-charset=utf8 && emmake make
 cp src/.libs/mecab src/.libs/mecab.bc
 # # works, but choice of TOTAL_MEMORY was super arbitrary
-# em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "intArrayFromString"]' -s TOTAL_MEMORY=134217728 --preload-file ipadic/
-em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "intArrayFromString"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file ipadic/
+# em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "intArrayFromString"]' -s TOTAL_MEMORY=134217728 --preload-file naist-jdic/
+em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "intArrayFromString"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file naist-jdic/
+
+gzip -k mecab.data
+gzip -k mecab.wasm
+gzip -k mecab.js
 
 
 # serve the current directory on port 8094

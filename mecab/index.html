@@ -118,7 +118,7 @@
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div> -->
     <form id="form">
-        <input id="args" name="args" value="-r mecabrc -o output.txt input.txt" placeholder="-r mecabrc -o output.txt input.txt">
+        <input id="args" name="args" value="-o output.txt input.txt" placeholder="-o output.txt input.txt">
         <textarea id="input" name="input">すもももももももものうち</textarea>
         <input id="submitter" type="submit">
     </form>
@@ -143,11 +143,11 @@
         // document.getElementById('output').innerText = output;
         // document.getElementById('output').insertAdjacentText('afterbegin', `${output.replace(/EOS\n$/, '')}\n`);
         const outputElem = document.getElementById('output');
-        outputElem.insertAdjacentText('beforeend', `${output.replace(/EOS\n$/, '')}\n`);
+        outputElem.insertAdjacentText('beforeend', `${output.replace(/EOS\n$/, '')}`);
         outputElem.scrollTop = outputElem.scrollHeight
       }, true);
 
-      const dicdir = '/ipadic';
+      const dicdir = '/naist-jdic';
 
       var Module = {
       	noInitialRun: true,
@@ -187,7 +187,10 @@
                     true);
           FS.createDataFile('/', 'output.txt',
                     'Output can be placed here (-o output.txt)', true, true);
-          FS.writeFile('mecabrc', `\
+          FS.mkdir('/usr');
+          FS.mkdir('/usr/local');
+          FS.mkdir('/usr/local/etc');
+          FS.writeFile('/usr/local/etc/mecabrc', `\
 ;
 ; Configuration file of MeCab
 ;
@@ -207,7 +210,7 @@ dicdir = ${dicdir}
         }],
         // preInit: [function() {
         //   FS.mkdir(dicdir);
-        //   const remoteDicDir = 'ipadic';
+        //   const remoteDicDir = 'naist-jdic';
         //   FS.createPreloadedFile(dicdir, 'dicrc', `${remoteDicDir}/dicrc`, true, false);
         // }],
         postRun: [function() {
