@@ -113,7 +113,8 @@
       <progress value="0" max="100" id="progress" hidden=1></progress>
     </div>
 
-    
+    <h1>MeCab &mdash; WebAssembly</h1>
+    <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled by Alex Birch to WebAssembly (based on <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>). Using <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> dictionary.</p>
     <!-- <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div> -->
@@ -151,7 +152,8 @@
 
       var Module = {
       	noInitialRun: true,
-      	// onRuntimeInitialized: function() {
+      	onRuntimeInitialized: function() {
+          statusElement.style.display = 'none';
         //   // FS.mkdir('/usr');
         //   // FS.mkdir('/usr/local');
         //   // FS.mkdir('/usr/local/etc');
@@ -173,7 +175,7 @@
 
         //   var output = FS.readFile('output.txt', {encoding : "utf8"});
           // document.getElementById('form').dispatchEvent(new Event('submit'));
-      	// },
+      	},
         locateFile: function(path, prefix) {
           console.log(path, prefix);
           // // if it's a mem init file, use a custom dir

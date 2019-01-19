@@ -14,7 +14,8 @@ cd mecab/mecab-naist-jdic-0.6.3b-20111013
 cd mecab/mecab
 mkdir -p naist-jdic
 # copy dictionary
-cp /usr/local/lib/mecab/dic/naist-jdic/**/* naist-jdic
+cp /usr/local/lib/mecab/dic/naist-jdic/**/*.{dic,def,bin} naist-jdic
+cp /usr/local/lib/mecab/dic/naist-jdic/**/dicrc naist-jdic
 emconfigure ./configure --with-charset=utf8 && emmake make
 cp src/.libs/mecab src/.libs/mecab.bc
 # # works, but choice of TOTAL_MEMORY was super arbitrary
