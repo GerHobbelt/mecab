@@ -14,18 +14,14 @@ cd mecab/mecab-naist-jdic-0.6.3b-20111013
 cd mecab/mecab
 mkdir -p naist-jdic
 # copy dictionary
-cp /usr/local/lib/mecab/dic/naist-jdic/**/*.{dic,def,bin} naist-jdic
-cp /usr/local/lib/mecab/dic/naist-jdic/**/dicrc naist-jdic
+cp /usr/local/lib/mecab/dic/naist-jdic/{dicrc,unk.dic,char.bin,sys.dic,matrix.bin} naist-jdic
 emconfigure ./configure --with-charset=utf8 && emmake make
 cp src/.libs/mecab src/.libs/mecab.bc
 # # works, but choice of TOTAL_MEMORY was super arbitrary
 # em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "intArrayFromString"]' -s TOTAL_MEMORY=134217728 --preload-file naist-jdic/
-em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "intArrayFromString"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file naist-jdic/
+em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file naist-jdic/
 
-gzip -k mecab.data
-gzip -k mecab.wasm
-gzip -k mecab.js
-
+gzip -kf mecab.data mecab.wasm mecab.js
 
 # serve the current directory on port 8094
 # and navigate to:

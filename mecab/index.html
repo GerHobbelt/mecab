@@ -184,14 +184,15 @@
           return prefix + path;
         },
         preRun: [function() {
-          FS.createDataFile('/', 'input.txt',
-                    Module['intArrayFromString']('Input goes here.'), true,
-                    true);
-          FS.createDataFile('/', 'output.txt',
-                    'Output can be placed here (-o output.txt)', true, true);
-          FS.mkdir('/usr');
-          FS.mkdir('/usr/local');
-          FS.mkdir('/usr/local/etc');
+          // FS.createDataFile('/', 'input.txt',
+          //           Module['intArrayFromString']('Input goes here.'), true,
+          //           true);
+          // FS.createDataFile('/', 'input.txt',
+          //           Module['intArrayFromString']('Input goes here.'), true,
+          //           true);
+          // FS.createDataFile('/', 'output.txt',
+          //           'Output can be placed here (-o output.txt)', true, true);
+          FS.createPath('/', 'usr/local/etc')
           FS.writeFile('/usr/local/etc/mecabrc', `\
 ;
 ; Configuration file of MeCab
