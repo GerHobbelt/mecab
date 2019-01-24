@@ -119,7 +119,7 @@
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div> -->
     <form id="form">
-        <input id="args" name="args" value="-o output.txt input.txt" placeholder="-o output.txt input.txt">
+        <!-- <input id="args" name="args" value="-o output.txt input.txt" placeholder="-o output.txt input.txt"> -->
         <textarea id="input" name="input">すもももももももものうち</textarea>
         <input id="submitter" type="submit">
     </form>
@@ -129,20 +129,17 @@
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
       var spinnerElement = document.getElementById('spinner');
-      let mecab_do;
+      const wrapped = {};
+      const objectPool = {
+        mecab_model_t: new Set(), // config
+        mecab_t: new Set(), // tagger
+      };
+      let p_currentTagger;
 
       document.getElementById('form').addEventListener('submit', function(event) {
         event.preventDefault();
-        console.log(arguments);
-        const args = document.getElementById('args').value;
         const input = document.getElementById('input').value;
-        FS.writeFile('input.txt', `${input}\n`);
-        FS.writeFile('output.txt', "");
-        mecab_do(args);
-        const output = FS.readFile('output.txt', {encoding : "utf8"});
-        // console.log(output);
-        // document.getElementById('output').innerText = output;
-        // document.getElementById('output').insertAdjacentText('afterbegin', `${output.replace(/EOS\n$/, '')}\n`);
+        const output = wrapped.mecab_sparse_tostr(p_currentTagger, input);
         const outputElem = document.getElementById('output');
         outputElem.insertAdjacentText('beforeend', `${output.replace(/EOS\n$/, '')}`);
         outputElem.scrollTop = outputElem.scrollHeight
@@ -154,27 +151,6 @@
       	noInitialRun: true,
       	onRuntimeInitialized: function() {
           statusElement.style.display = 'none';
-        //   // FS.mkdir('/usr');
-        //   // FS.mkdir('/usr/local');
-        //   // FS.mkdir('/usr/local/etc');
-        //   // FS.writeFile('/usr/local/etc/mecabrc', `\
-          
-        //   // const mecab_do = Module.cwrap('mecab_do2', 'number', ['string']);
-
-        //   const input = 'すもももももももものうち';
-        //   FS.writeFile('input.txt', `${input}\n`);
-        //   FS.writeFile('output.txt', "");
-
-        //   // const args = '--help';
-        //   // const args = '-o output.txt input.txt';
-        //   // const args = 'input.txt';
-        //   // const args = '-r mecabrc --help';
-        //   const args = '-r mecabrc input.txt';
-        //   // _mecab_do2(args);
-      		// mecab_do(args);
-
-        //   var output = FS.readFile('output.txt', {encoding : "utf8"});
-          // document.getElementById('form').dispatchEvent(new Event('submit'));
       	},
         locateFile: function(path, prefix) {
           console.log(path, prefix);
@@ -184,14 +160,6 @@
           return prefix + path;
         },
         preRun: [function() {
-          // FS.createDataFile('/', 'input.txt',
-          //           Module['intArrayFromString']('Input goes here.'), true,
-          //           true);
-          // FS.createDataFile('/', 'input.txt',
-          //           Module['intArrayFromString']('Input goes here.'), true,
-          //           true);
-          // FS.createDataFile('/', 'output.txt',
-          //           'Output can be placed here (-o output.txt)', true, true);
           FS.createPath('/', 'usr/local/etc')
           FS.writeFile('/usr/local/etc/mecabrc', `\
 ;
@@ -211,13 +179,42 @@ dicdir = ${dicdir}
 ; eos-format = EOS\n
 `);
         }],
-        // preInit: [function() {
-        //   FS.mkdir(dicdir);
-        //   const remoteDicDir = 'naist-jdic';
-        //   FS.createPreloadedFile(dicdir, 'dicrc', `${remoteDicDir}/dicrc`, true, false);
-        // }],
         postRun: [function() {
-          mecab_do = Module.cwrap('mecab_do2', 'number', ['string']);
+          Object.assign(wrapped, {
+            mecab_do: Module.cwrap('mecab_do2', 'number', ['string']),
+            mecab_model_new2: Module.cwrap('mecab_model_new2', 'number', ['string']),
+            mecab_model_destroy: Module.cwrap('mecab_model_destroy', null, ['number']),
+            mecab_strerror: Module.cwrap('mecab_strerror', 'string', ['number']),
+            mecab_model_new_tagger: Module.cwrap('mecab_model_new_tagger', 'number', ['number']),
+            mecab_destroy: Module.cwrap('mecab_destroy', null, ['number']),
+            mecab_nbest_sparse_tostr: Module.cwrap('mecab_nbest_sparse_tostr', 'string', ['number', 'number', 'string']),
+            mecab_sparse_tostr: Module.cwrap('mecab_sparse_tostr', 'string', ['number', 'string']),
+          });
+
+          // we could probably skip the destroy since the world's ending anyway..
+          Module.addOnExit(() => {
+            // iterate over copy, since we're removing the elements as we go
+            [...objectPool.mecab_t.values()].forEach((p_mecab_t) => {
+              // remove pointer from the pool.. admittedly I'm not defending against anything in particular.
+              objectPool.mecab_t.delete(p_mecab_t);
+              wrapped.mecab_destroy(p_mecab_t);
+            });
+            [...objectPool.mecab_model_t.values()].forEach((p_mecab_model_t) => {
+              objectPool.mecab_model_t.delete(p_mecab_model_t);
+              wrapped.mecab_model_destroy(p_mecab_model_t);
+            });
+          });
+
+          // const args = document.getElementById('args').value;
+          const args = '-o output.txt input.txt';
+          const p_mecab_model = wrapped.mecab_model_new2(args);
+          objectPool.mecab_model_t.add(p_mecab_model);
+
+          const p_tagger = wrapped.mecab_model_new_tagger(p_mecab_model);
+          objectPool.mecab_t.add(p_tagger);
+
+          p_currentTagger = p_tagger;
+
           document.getElementById('submitter').click();
         }],
         print: (function() {

@@ -19,7 +19,7 @@ emconfigure ./configure --with-charset=utf8 && emmake make
 cp src/.libs/mecab src/.libs/mecab.bc
 # # works, but choice of TOTAL_MEMORY was super arbitrary
 # em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "intArrayFromString"]' -s TOTAL_MEMORY=134217728 --preload-file naist-jdic/
-em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2', '_mecab_model_new2', '_mecab_model_destroy', '_mecab_strerror', '_mecab_model_new_tagger', '_mecab_destroy', '_mecab_nbest_sparse_tostr', '_mecab_sparse_tostr']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file naist-jdic/
+em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2', '_mecab_model_new2', '_mecab_model_destroy', '_mecab_strerror', '_mecab_model_new_tagger', '_mecab_destroy', '_mecab_nbest_sparse_tostr', '_mecab_sparse_tostr']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "addOnExit"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file naist-jdic/
 
 gzip -kf mecab.data mecab.wasm mecab.js
 
