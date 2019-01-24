@@ -46,3 +46,8 @@ initial
 
 # todo:
 # minify
+
+# todo: use lattice API insetad of parsing text
+```
+, 'mecab_model_new_lattice', '_mecab_lattice_clear', '_mecab_lattice_destroy', '_mecab_lattice_is_available', '_mecab_lattice_set_sentence', '_mecab_lattice_strerror', '_mecab_lattice_get_size', '_mecab_lattice_get_begin_nodes', '_mecab_lattice_next', '_mecab_lattice_tostr'
+```

@@ -126,23 +126,70 @@
     <pre id="output"></pre>
 
     <script type='text/javascript'>
-      var statusElement = document.getElementById('status');
-      var progressElement = document.getElementById('progress');
-      var spinnerElement = document.getElementById('spinner');
+      const statusElement = document.getElementById('status');
+      const progressElement = document.getElementById('progress');
+      const spinnerElement = document.getElementById('spinner');
+      const outputElement = document.getElementById('output');
       const wrapped = {};
-      const objectPool = {
+      const toBeFreed = {
         mecab_model_t: new Set(), // config
         mecab_t: new Set(), // tagger
+        mecab_lattice_t: new Set(),
       };
       let p_currentTagger;
+      let p_currentLattice;
+
+      function katakanaToHiragana(katakanaStr) {
+        // I see no problem with this
+        return Array.from(katakanaStr)
+        .map((character) => String.fromCharCode(character.charCodeAt(0)-96))
+        .join('')
+      }
+
+      function parse(sentence) {
+        const output = wrapped.mecab_sparse_tostr(p_currentTagger, sentence);
+        return output.replace(/EOS\n$/, '')
+        .split('\n')
+        .filter(x => x)
+        .map((line) => {
+          const [token, features] = line.split('\t');
+          const [
+          surfaceLayerForm, // 表層形
+          partOfSpeech, // 品詞
+          partOfSpeechSubcategory1, // 品詞細分類1
+          partOfSpeechSubcategory2, // 品詞細分類2
+          partOfSpeechSubcategory3, // 品詞細分類3
+          utilizationType, // 活用型
+          dictionaryForm, // 活用形
+          originalForm, // 原形
+          reading, // 読み
+          pronunication, // 発音
+          ] = features.split(',');
+          return {
+            token,
+            surfaceLayerForm,
+            partOfSpeech,
+            partOfSpeechSubcategory1,
+            partOfSpeechSubcategory2,
+            partOfSpeechSubcategory3,
+            utilizationType,
+            dictionaryForm,
+            originalForm,
+            reading,
+            readingHiragana: katakanaToHiragana(reading),
+            pronunication,
+          }
+        });
+      }
 
       document.getElementById('form').addEventListener('submit', function(event) {
         event.preventDefault();
         const input = document.getElementById('input').value;
-        const output = wrapped.mecab_sparse_tostr(p_currentTagger, input);
-        const outputElem = document.getElementById('output');
-        outputElem.insertAdjacentText('beforeend', `${output.replace(/EOS\n$/, '')}`);
-        outputElem.scrollTop = outputElem.scrollHeight
+        const nodes = parse(input);
+        console.warn(nodes);
+        const pretty = nodes.map((node) => node.token).join('\n');
+        outputElement.insertAdjacentText('beforeend', `${pretty}\n`);
+        outputElement.scrollTop = outputElement.scrollHeight
       }, true);
 
       const dicdir = '/naist-jdic';
@@ -193,25 +240,22 @@ dicdir = ${dicdir}
 
           // we could probably skip the destroy since the world's ending anyway..
           Module.addOnExit(() => {
-            // iterate over copy, since we're removing the elements as we go
-            [...objectPool.mecab_t.values()].forEach((p_mecab_t) => {
-              // remove pointer from the pool.. admittedly I'm not defending against anything in particular.
-              objectPool.mecab_t.delete(p_mecab_t);
+            toBeFreed.mecab_t.forEach((p_mecab_t) => {
               wrapped.mecab_destroy(p_mecab_t);
             });
-            [...objectPool.mecab_model_t.values()].forEach((p_mecab_model_t) => {
-              objectPool.mecab_model_t.delete(p_mecab_model_t);
+            toBeFreed.mecab_model_t.forEach((p_mecab_model_t) => {
               wrapped.mecab_model_destroy(p_mecab_model_t);
             });
           });
 
           // const args = document.getElementById('args').value;
-          const args = '-o output.txt input.txt';
+          // const args = '-o output.txt input.txt';
+          const args = '';
           const p_mecab_model = wrapped.mecab_model_new2(args);
-          objectPool.mecab_model_t.add(p_mecab_model);
+          toBeFreed.mecab_model_t.add(p_mecab_model);
 
           const p_tagger = wrapped.mecab_model_new_tagger(p_mecab_model);
-          objectPool.mecab_t.add(p_tagger);
+          toBeFreed.mecab_t.add(p_tagger);
 
           p_currentTagger = p_tagger;
 
