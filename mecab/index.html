@@ -103,16 +103,14 @@
     form input,form textarea {
       display: block;
     }
+
+    #richOutput {
+      margin-top: 1em;
+      font-size: 18px;
+      font-weight: 600;
+    }
 	</style>
   <script type="text/javascript">
-/**
-katakanaToHiragana and dependencies extracted from WanaKana
-https://github.com/WaniKani/WanaKana
-
-The MIT License (MIT)
-
-Copyright (c) 2013 WaniKani Community Github
-*/      
 /**
  * Returns detailed type as string (instead of just 'object' for arrays etc)
  * @private
@@ -170,14 +168,26 @@ function isCharInRange(char = '', start, end) {
   return start <= code && code <= end;
 }
 
+const HIRAGANA_START = 0x3041;
+const HIRAGANA_END = 0x3096;
 const KATAKANA_START = 0x30a1;
 const KATAKANA_END = 0x30fc;
-const HIRAGANA_START = 0x3041;
 const PROLONGED_SOUND_MARK = 0x30fc;
 const KANA_SLASH_DOT = 0x30fb;
 const ROMANIZATIONS = {
   HEPBURN: 'hepburn',
 };
+
+/**
+ * Tests a character. Returns true if the character is [Hiragana](https://en.wikipedia.org/wiki/Hiragana).
+ * @param  {String} char character string to test
+ * @return {Boolean}
+ */
+function isCharHiragana(char = '') {
+  if (isEmpty(char)) return false;
+  if (isCharLongDash(char)) return true;
+  return isCharInRange(char, HIRAGANA_START, HIRAGANA_END);
+}
 
 /**
  * Tests a character. Returns true if the character is [Katakana](https://en.wikipedia.org/wiki/Katakana).
@@ -627,8 +637,11 @@ function katakanaToHiragana(input = '', toRomaji, isDestinationRomaji) {
     }, [])
     .join('');
 }
-window.katakanaToHiragana = katakanaToHiragana;
-window.toRomaji = toRomaji;
+Object.assign(window, {
+  katakanaToHiragana,
+  toRomaji,
+  isCharHiragana,
+});
   </script>
 </head>
 <body>
@@ -646,10 +659,13 @@ window.toRomaji = toRomaji;
     </div> -->
     <form id="form">
         <!-- <input id="args" name="args" value="-o output.txt input.txt" placeholder="-o output.txt input.txt"> -->
-        <textarea id="input" name="input">すもももももももものうち</textarea>
+        <textarea id="input" name="input">
+太郎はこの本を二郎を見た女性に渡した。
+すもももももももものうち。
+</textarea>
         <input id="submitter" type="submit">
     </form>
-    <pre id="output"></pre>
+    <!-- <pre id="output"></pre> -->
     <div id="richOutput"></div>
 
     <script type='text/javascript'>
@@ -657,7 +673,7 @@ window.toRomaji = toRomaji;
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
       const outputElement = document.getElementById('output');
-      const richOutputElement = document.getElementById('output');
+      const richOutputElement = document.getElementById('richOutput');
       const wrapped = {};
       const toBeFreed = {
         mecab_model_t: new Set(), // config
@@ -666,6 +682,32 @@ window.toRomaji = toRomaji;
       };
       let p_currentTagger;
       let p_currentLattice;
+
+      function partition(readingHiragana, token) {
+        // iterate backwards through the chars in the token
+        // for (let i = token.length-1, char = token[i]; i >= 0; i--) {
+        //   if (!window.isCharHiragana(char)) {
+        //     return readingHiragana.substring(0, i);
+        //   }
+        // }
+        // iterate backwards through the chars in the token
+        let [prefix, hiraganaTail] = ['', token];
+        for (let i = token.length-1; i >= 0; i--) {
+          const char = token[i];
+          if (!window.isCharHiragana(char)) {
+            [prefix, hiraganaTail] = [token.substring(0, i+1), token.substring(i+1)];
+            break;
+          }
+        }
+        // console.log([prefix, hiraganaTail])
+        for (let i = readingHiragana.length-1, hiraganaTailIx = 0; i >= 0; i--, hiraganaTailIx++) {
+          const char = readingHiragana[i];
+          if (char !== hiraganaTail[hiraganaTailIx]) {
+            return [prefix, hiraganaTail, readingHiragana.substring(0, i+1)];
+          }
+        }
+        return [prefix, hiraganaTail, ''];
+      }
 
       function parse(sentence) {
         const output = wrapped.mecab_sparse_tostr(p_currentTagger, sentence);
@@ -692,6 +734,8 @@ window.toRomaji = toRomaji;
           reading, // 読み
           pronunication, // 発音
           ] = features;
+          const readingHiragana = window.katakanaToHiragana(reading, toRomaji, false)
+          const [prefix, kanaTail, readingHiraganaWithoutKanaTail] = partition(readingHiragana, token);
           return {
             token,
             surfaceLayerForm,
@@ -703,7 +747,10 @@ window.toRomaji = toRomaji;
             dictionaryForm,
             originalForm,
             reading,
-            readingHiragana: window.katakanaToHiragana(reading, toRomaji, false),
+            readingHiragana,
+            prefix,
+            kanaTail,
+            readingHiraganaWithoutKanaTail,
             pronunication,
           }
         });
@@ -713,17 +760,20 @@ window.toRomaji = toRomaji;
         const fragment = document.createDocumentFragment();
         const div = document.createElement('div');
         for (const node of nodes) {
-          if (node.readingHiragana
-            && node.readingHiragana !== node.token) {
+          if (node.readingHiraganaWithoutKanaTail
+            && node.readingHiraganaWithoutKanaTail !== node.token
+            && node.prefix) {
             const ruby = document.createElement('ruby');
             const rt = document.createElement('rt');
 
             // for some reason, in order for the rt to appear:
             // a space is required at the end of the ruby text
-            ruby.insertAdjacentText('afterbegin', `${node.token} `);
-            rt.insertAdjacentText('afterbegin', node.readingHiragana);
+            ruby.insertAdjacentText('afterbegin', node.prefix);
+            rt.insertAdjacentText('afterbegin', node.readingHiraganaWithoutKanaTail);
             ruby.appendChild(rt);
             div.appendChild(ruby);
+            // div.appendChild(document.createTextNode(node.kanaTail));
+            div.appendChild(document.createTextNode(`${node.kanaTail || ''} `));
           } else {
             div.insertAdjacentText('beforeend', `${node.token} ` );
           }
@@ -737,9 +787,9 @@ window.toRomaji = toRomaji;
         const input = document.getElementById('input').value;
         const nodes = parse(input);
         console.warn(nodes);
-        const pretty = nodes.map((node) => node.token).join('\n');
-        outputElement.insertAdjacentText('beforeend', `${pretty}\n`);
-        outputElement.scrollTop = outputElement.scrollHeight;
+        // const pretty = nodes.map((node) => node.token).join('\n');
+        // outputElement.insertAdjacentText('beforeend', `${pretty}\n`);
+        // outputElement.scrollTop = outputElement.scrollHeight;
 
         const fragment = createAnalysisFragment(nodes);
         richOutput.prepend(fragment);
