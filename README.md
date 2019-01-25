@@ -1,0 +1,1 @@
+[mecab-web](https://github.com/Birch-san/mecab/tree/master/mecab-web) is the original contribution inside this fork; more information can be found in its README.
