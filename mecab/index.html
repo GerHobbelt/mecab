@@ -93,7 +93,7 @@
 
     #input {
       width: 40em;
-      height: 10em;
+      height: 4em;
     }
 
     #args {
@@ -104,11 +104,19 @@
       display: block;
     }
 
+    textarea {
+      font-size: 16px;
+    }
+
     #richOutput {
       margin-top: 1em;
       font-size: 18px;
       font-weight: 600;
       word-spacing: 0.15em;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, "Lucida Grande", sans-serif;
     }
 	</style>
 </head>
@@ -120,8 +128,9 @@
       <progress value="0" max="100" id="progress" hidden=1></progress>
     </div>
 
-    <h1>MeCab &mdash; WebAssembly</h1>
-    <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled by Alex Birch to WebAssembly (based on <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>). Using <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> dictionary.</p>
+    <h1>MeCab in WebAssembly</h1>
+    <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled to WebAssembly by Alex Birch. References prior <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>.<br>Uses <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> dictionary.<br>Uses <a href="https://github.com/WaniKani/WanaKana">WanaKana</a> for transliteration, additional tokenization, and classification.<br>
+    <small>MeCab, NAIST-jdic, and this work are BSD-licensed. WanaKana is MIT-licensed.</small></p>
     <!-- <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div> -->
@@ -131,7 +140,7 @@
 太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。
 </textarea>
-        <input id="submitter" type="submit">
+        <input id="submitter" type="submit" value="Analyse Japanese">
     </form>
     <!-- <pre id="output"></pre> -->
     <div id="richOutput"></div>
@@ -244,10 +253,16 @@
       function createAnalysisFragment(nodes) {
         const fragment = document.createDocumentFragment();
         const div = document.createElement('div');
+        let bufferedText = '';
         for (const node of nodes) {
           if (node.kanjiBoundaries.kanji) {
             const ruby = document.createElement('ruby');
             const rt = document.createElement('rt');
+
+            if (bufferedText) {
+              div.insertAdjacentText('beforeend', `${bufferedText} `);
+              bufferedText = '';
+            }
 
             // for some reason, in order for the rt to appear:
             // a space is required at the end of the ruby text
@@ -255,11 +270,16 @@
             rt.insertAdjacentText('afterbegin', node.kanjiReading);
             ruby.appendChild(rt);
             div.appendChild(ruby);
-            // div.appendChild(document.createTextNode(node.okurigana));
-            div.appendChild(document.createTextNode(`${node.kanjiBoundaries.afterKanji} `));
+            bufferedText = node.kanjiBoundaries.afterKanji;
           } else {
-            div.insertAdjacentText('beforeend', `${node.token} ` );
+            const subtokens = wanakana.tokenize(node.token, { detailed: true });
+            const isPunctuation = subtokens.length
+              && ['englishPunctuation', 'japanesePunctuation'].includes(subtokens[0].type);
+            bufferedText += `${isPunctuation ? '' : ' '}${node.token}`;
           }
+        }
+        if (bufferedText) {
+          div.insertAdjacentText('beforeend', bufferedText);
         }
         fragment.appendChild(div);
         return fragment;
