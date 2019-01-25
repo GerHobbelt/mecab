@@ -1,0 +1,10 @@
+# compilation products of em++
+mecab.js
+mecab.html
+mecab.wasm
+mecab.data
+
+# pre-compressed so that Apache doesn't have to gzip them every time
+mecab.js.gz
+mecab.wasm.gz
+mecab.data.gz
