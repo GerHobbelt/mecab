@@ -7,8 +7,8 @@ Uses [https://github.com/WaniKani/WanaKana](WanaKana) (MIT license) for translit
 See a live demo [on Birchlabs](https://birchlabs.co.uk/wasm/index.html).
 
 Japanese is a language without spaces. MeCab suggests where to put spaces.  
-MeCab suggests how you might pronounce kanji words.  
-MeCab deconjugates verbs, to reveal the "dictionary form".
+MeCab suggests how to pronounce kanji words.  
+MeCab deconjugates verbs, revealing the "dictionary form".
 
 ## Building
 
