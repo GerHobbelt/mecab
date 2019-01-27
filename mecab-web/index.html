@@ -152,6 +152,18 @@
       text-decoration-line: underline;
     }
 
+    a.token2 {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    a.token2:hover {
+      text-decoration-style: dotted;
+      text-decoration-color: black;
+      text-decoration-line: underline;
+    }
+
     #submitter {
       color: white;
       font-weight: 600;
@@ -202,7 +214,7 @@
 
     <h1>MeCab in WebAssembly</h1>
     <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled to WebAssembly.<br>References prior <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>.<br><br>Uses <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> as dataset for MeCab.<br>Uses <a href="https://github.com/WaniKani/WanaKana">WanaKana</a> for transliteration, additional tokenization, and classification.<br>
-      Uses <a href="https://jisho.org/about">Jisho</a> (via iframe) for dictionary lookup &ndash; created by Kim Ahlström, Miwa Ahlström and Andrew Plummer.<br>
+      Uses <a href="https://jisho.org/about">Jisho</a> for dictionary lookup &ndash; created by Kim Ahlström, Miwa Ahlström and Andrew Plummer.<br>
     
     <div><small>Licenses:</small></div>
 <details>
@@ -701,8 +713,16 @@ This webpage combines language technologies to suggest where to insert spaces,<b
             div.insertAdjacentText('beforeend', node.token);
             continue;
           }
-          const span = document.createElement('span');
-          span.className = 'token';
+          let span;
+          if (new URLSearchParams(window.location.search).get('jisho')) {
+            span = document.createElement('span');
+            span.className = 'token';
+          } else {
+            span = document.createElement('a');
+            span.className = 'token2';
+            span.href = `https://jisho.org/search/${encodeURIComponent(node.token)}`;
+            span.target = '_blank';
+          }
           span._mecabToken = node.token;
           let isFirstSubtoken = true;
           for (const subtoken of node.subtokens) {
