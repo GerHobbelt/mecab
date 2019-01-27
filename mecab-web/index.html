@@ -298,42 +298,159 @@ MeCab deconjugates verbs, revealing the "dictionary form".
       let p_currentTagger;
       let p_currentLattice;
 
-      function getKanjiBoundaries(readingHiragana, token) {
-        const subtokens = wanakana.tokenize(token, { detailed: true });
-        const kanjiSubtoken = subtokens.findIndex((subtoken) => subtoken.type === 'kanji');
-        if (kanjiSubtoken === -1) {
-          return [token, '', ''];
-        }
-
-        return [
-        subtokens.slice(0, kanjiSubtoken)
-        .map((subtoken) => subtoken.value)
-        .join(''),
-        subtokens[kanjiSubtoken].value,
-        subtokens.slice(kanjiSubtoken+1)
-        .map((subtoken) => subtoken.value)
-        .join(''),
-        ];
+      /**
+      I ended up not needing this in the end, but it does a cool thing:
+      input:
+      '取り引き'
+      output:
+      [
+        [
+          {type: 'kanji', value: '取'},
+          {type: 'hiragana', value: 'り'},
+        ],
+        [
+          {type: 'kanji', value: '引'},
+          {type: 'hiragana', value: 'き'},
+        ],
+      ]
+      */
+      /*
+      function chunkByKanji(token) {
+        return wanakana.tokenize(token, { detailed: true })
+        .reduce((accumulator, currentValue)=> {
+          if (!accumulator.length) {
+            return [[currentValue]];
+          }
+          if (currentValue.type === 'kanji') {
+            // start a new segment
+            return [...accumulator, [currentValue]];
+          }
+          // insert our token into latest segment
+          return [
+          ...accumulator.slice(0, accumulator.length-1),
+          [...accumulator[accumulator.length-1], currentValue],
+          ];
+        },[]);
       }
+      */
 
-      function getReadingWithoutOkurigana(readingHiragana, [beforeKanji, kanji, afterKanji]) {
-        let readingBeginIx = 0;
-        for (let i = 0; i < readingHiragana.length && i < beforeKanji.length; i++) {
-          if (beforeKanji[i] === readingHiragana[i]) {
-            readingBeginIx++;
-          } else {
-            break;
+      /**
+      I ended up not needing this in the end, but it does a cool thing:
+      input:
+      ('取り引き', 'とりひき')
+      output:
+      [
+        [
+          {type: 'kanji', value: '取', reading: 'と''},
+          {type: 'hiragana', value: 'り'},
+        ],
+        [
+          {type: 'kanji', value: '引', reading: 'ひ'},
+          {type: 'hiragana', value: 'き'},
+        ],
+      ]
+      */
+      /*
+      function withReadingsByKanjiChunk(token, readingHiragana) {
+        const subtokens = wanakana.tokenize(token, { detailed: true });
+        const regExStr = subtokens.reduce((accumulator, currentSubtoken) => {
+          if (currentSubtoken.type === 'kanji') {
+            return accumulator + '(.+)';
           }
-        }
-        let readingEndIx = readingHiragana.length-1;
-        for (let i = readingHiragana.length-1, okuriganaIx = afterKanji.length-1; i >= 0 && okuriganaIx >= 0; i--, okuriganaIx--) {
-          if (afterKanji[okuriganaIx] === readingHiragana[i]) {
-            readingEndIx--;
-          } else {
-            break;
+          return accumulator + currentSubtoken.value;
+        }, '^') + '$';
+
+        const regEx = new RegExp(regExStr);
+        const matches = regEx.exec(readingHiragana);
+
+        return subtokens.reduce((accumulator, currentSubtoken) => {
+          const [chunks, kanjiReadings] = accumulator;
+          if (currentSubtoken.type === 'kanji') {
+            // start a new chunk
+            return [
+              [
+                ...chunks,
+                [{
+                  ...currentSubtoken,
+                  reading: kanjiReadings[0],
+                }]
+              ],
+              kanjiReadings.slice(1)
+            ];
           }
+          // insert our subtoken into latest chunk
+          return [
+            [
+              ...chunks.slice(0, chunks.length-1),
+              [
+              ...chunks[chunks.length-1],
+              currentSubtoken,
+              ],
+            ],
+            kanjiReadings,
+          ];
+        }, [[], matches.slice(1)])[0];
+      }
+      */
+
+      /**
+      input:
+      ('取り引き', 'とりひき')
+      output:
+      [
+        {type: 'kanji', value: '取', reading: 'と''},
+        {type: 'hiragana', value: 'り'},
+        {type: 'kanji', value: '引', reading: 'ひ'},
+        {type: 'hiragana', value: 'き'},
+      ]
+      */
+      function toSubtokensWithKanjiReadings(token, readingHiragana) {
+        const subtokens = wanakana.tokenize(token, { detailed: true });
+        // if there's no kanji, then there's nothing to fit furigana to
+        // and if there's anything other than kanji+hiragana, then our "strip okurigana" tactic won't work.
+        if (!subtokens.some((subtoken) => ['kanji'].includes(subtoken.type))
+          || subtokens.some((subtoken) => !['kanji', 'hiragana'].includes(subtoken.type))) {
+          // console.error(`token ${token} has non-kanji or non-hiragana subtokens.`);
+          // we're only interested in fitting a hiragana reading to kanji words that (may) have okurigana.
+          // we're not interested in fitting our hiragana reading to a katakana or English word, for example.
+          return subtokens;
         }
-        return readingHiragana.slice(readingBeginIx, readingEndIx+1);
+        const regExStr = subtokens.reduce((accumulator, currentSubtoken) => {
+          if (currentSubtoken.type === 'kanji') {
+            return accumulator + '(.+)';
+          }
+          return accumulator + currentSubtoken.value;
+        }, '^') + '$';
+
+        const regEx = new RegExp(regExStr);
+        const matches = regEx.exec(readingHiragana);
+        if (!matches) {
+          console.error(`We were unable to match the hiragana reading '${readingHiragana}' to token '${token}'. We used RegExp /${regExStr}/.`);
+          return subtokens;
+        }
+
+        return subtokens.reduce((accumulator, currentSubtoken) => {
+          const [chunks, kanjiReadings] = accumulator;
+          if (currentSubtoken.type === 'kanji') {
+            return [
+              [
+                ...chunks,
+                {
+                  ...currentSubtoken,
+                  reading: kanjiReadings[0],
+                },
+              ],
+              kanjiReadings.slice(1)
+            ];
+          }
+          return [
+            [
+              ...chunks,
+              currentSubtoken,
+            ],
+            kanjiReadings,
+          ];
+        }, [[], matches.slice(1)])[0];
       }
 
       function parse(sentence) {
@@ -362,8 +479,8 @@ MeCab deconjugates verbs, revealing the "dictionary form".
           pronunication, // 発音
           ] = features;
           const readingHiragana = wanakana.toHiragana(reading, { passRomaji: false });
-          const [beforeKanji, kanji, afterKanji] = getKanjiBoundaries(readingHiragana, token);
-          const kanjiReading = getReadingWithoutOkurigana(readingHiragana, [beforeKanji, kanji, afterKanji]);
+          const subtokens = toSubtokensWithKanjiReadings(token, readingHiragana);
+          // console.warn(subtokens);
           return {
             token,
             surfaceLayerForm,
@@ -376,12 +493,7 @@ MeCab deconjugates verbs, revealing the "dictionary form".
             originalForm,
             reading,
             readingHiragana,
-            kanjiBoundaries: {
-              beforeKanji,
-              kanji,
-              afterKanji,
-            },
-            kanjiReading,
+            subtokens,
             pronunication,
           }
         });
@@ -392,27 +504,32 @@ MeCab deconjugates verbs, revealing the "dictionary form".
         const div = document.createElement('div');
         let bufferedText = '';
         for (const node of nodes) {
-          if (node.kanjiBoundaries.kanji) {
-            const ruby = document.createElement('ruby');
-            const rt = document.createElement('rt');
+          let isFirstSubtoken = true;
+          for (const subtoken of node.subtokens) {
+            if (subtoken.type === 'kanji') {
+              if (bufferedText) {
+                const trailingWhitespace = isFirstSubtoken ? ' ' : '';
+                div.insertAdjacentText('beforeend', `${bufferedText}${trailingWhitespace}`);
+                bufferedText = '';
+              }
+              const ruby = document.createElement('ruby');
+              const rb = document.createElement('rb');
+              const rt = document.createElement('rt');
 
-            if (bufferedText) {
-              div.insertAdjacentText('beforeend', `${bufferedText} `);
-              bufferedText = '';
+              rb.textContent = subtoken.value;
+              rt.textContent = subtoken.reading;
+              ruby.appendChild(rb);
+              ruby.appendChild(rt);
+              div.appendChild(ruby);
+            } else {
+              const leadingWhitespace = isFirstSubtoken
+              && !(['englishPunctuation', 'japanesePunctuation']
+              .includes(subtoken.type))
+              ? ' '
+              : '';
+              bufferedText += `${leadingWhitespace}${subtoken.value}`;
             }
-
-            // for some reason, in order for the rt to appear:
-            // a space is required at the end of the ruby text
-            ruby.insertAdjacentText('afterbegin', node.kanjiBoundaries.kanji);
-            rt.insertAdjacentText('afterbegin', node.kanjiReading);
-            ruby.appendChild(rt);
-            div.appendChild(ruby);
-            bufferedText = node.kanjiBoundaries.afterKanji;
-          } else {
-            const subtokens = wanakana.tokenize(node.token, { detailed: true });
-            const isPunctuation = subtokens.length
-              && ['englishPunctuation', 'japanesePunctuation'].includes(subtokens[0].type);
-            bufferedText += `${isPunctuation ? '' : ' '}${node.token}`;
+            isFirstSubtoken = false;
           }
         }
         if (bufferedText) {
