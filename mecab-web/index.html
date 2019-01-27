@@ -453,7 +453,7 @@ MeCab deconjugates verbs, revealing the "dictionary form".
         }, [[], matches.slice(1)])[0];
       }
 
-      function parse(sentence) {
+      function toMecabTokens(sentence) {
         const output = wrapped.mecab_sparse_tostr(p_currentTagger, sentence);
         console.log(output);
         return output.replace(/EOS\n$/, '')
@@ -495,21 +495,131 @@ MeCab deconjugates verbs, revealing the "dictionary form".
             readingHiragana,
             subtokens,
             pronunication,
+            isWhitespace: false,
           }
         });
+      }
+
+      function splitAtIndices(str, indices) {
+        return [...indices, str.length].reduce((accumulator, splitIx) => {
+          const [remainingStr, startIx, splits] = accumulator;
+          return [
+            remainingStr.substring(splitIx-startIx),
+            splitIx,
+            [...splits, remainingStr.substring(0, splitIx-startIx)],
+          ]
+        }, [str, 0, []])[2];
+      }
+
+      function withWhitespacesSplicedBackIn(mecabTokens, whitespaces) {
+        return mecabTokens.reduce((accumulator, currentToken) => {
+          const [tokens, remainingWhitespaces, sentenceIx] = accumulator;
+          const currentSentenceIx = sentenceIx + currentToken.token.length;
+          if (remainingWhitespaces.length
+            && remainingWhitespaces[0].index === currentSentenceIx) {
+            const whitespaceObj = remainingWhitespaces[0];
+            const whitespaceToken = whitespaceObj[0];
+            return [
+              [
+                ...tokens,
+                currentToken,
+                {
+                  token: whitespaceToken,
+                  isWhitespace: true,
+                  subtokens: [
+                    {
+                      type: 'whitespace',
+                      value: whitespaceToken,
+                    },
+                  ],
+                },
+              ],
+              remainingWhitespaces.slice(1),
+              currentSentenceIx
+              + whitespaceToken.length,
+            ];
+          }
+          return [
+            [
+              ...tokens,
+              currentToken,
+            ],
+            remainingWhitespaces,
+            currentSentenceIx,
+          ];
+        }, [[], whitespaces, 0])[0];
+      }
+
+      function withInterWordWhitespaces(mecabTokens) {
+        return mecabTokens.reduce((accumulator, currentToken) => {
+          const [tokens, prevToken] = accumulator;
+          if (!prevToken
+            || !prevToken.subtokens.length
+            || !currentToken.subtokens.length) {
+            return [[...tokens, currentToken], currentToken];
+          }
+          const [leftOfBoundary, rightOfBoundary] = [
+            prevToken.subtokens[prevToken.subtokens.length-1],
+            currentToken.subtokens[0],
+          ];
+          if (!(['englishPunctuation', 'japanesePunctuation', 'whitespace']
+              .includes(leftOfBoundary.type))
+            && !(['englishPunctuation', 'japanesePunctuation', 'whitespace']
+              .includes(rightOfBoundary.type))) {
+            return [
+              [
+                ...tokens,
+                {
+                  isWhitespace: true,
+                  token: ' ',
+                  subtokens: [
+                    {
+                      type: 'whitespace',
+                      value: ' ',
+                    },
+                  ],
+                },
+                currentToken,
+              ],
+              currentToken,
+            ];
+          }
+          return [[...tokens, currentToken], currentToken];
+        }, [[], undefined])[0];
+      }
+
+      function parse(sentence) {
+        const whitespaces = [];
+        const r = new RegExp('[\\s　]+', 'g');
+        while(m = r.exec(sentence)) {
+          /*
+          0: ' ',
+          index: 27,
+          */
+          whitespaces.push(m);
+        }
+        const mecabTokens = toMecabTokens(sentence);
+        const plusOriginalWhitespaces = withWhitespacesSplicedBackIn(mecabTokens, whitespaces);
+        const plusInterWordWhitespaces = withInterWordWhitespaces(plusOriginalWhitespaces);
+        return plusInterWordWhitespaces;
       }
 
       function createAnalysisFragment(nodes) {
         const fragment = document.createDocumentFragment();
         const div = document.createElement('div');
+        let isFirstNode = true;
         let bufferedText = '';
         for (const node of nodes) {
+          if (node.isWhitespace) {
+            div.insertAdjacentText('beforeend', node.token);
+            continue;
+          }
+          const span = document.createElement('span');
           let isFirstSubtoken = true;
           for (const subtoken of node.subtokens) {
             if (subtoken.type === 'kanji') {
               if (bufferedText) {
-                const trailingWhitespace = isFirstSubtoken ? ' ' : '';
-                div.insertAdjacentText('beforeend', `${bufferedText}${trailingWhitespace}`);
+                span.insertAdjacentText('beforeend', bufferedText);
                 bufferedText = '';
               }
               const ruby = document.createElement('ruby');
@@ -520,21 +630,22 @@ MeCab deconjugates verbs, revealing the "dictionary form".
               rt.textContent = subtoken.reading;
               ruby.appendChild(rb);
               ruby.appendChild(rt);
-              div.appendChild(ruby);
+              span.appendChild(ruby);
             } else {
-              const leadingWhitespace = isFirstSubtoken
-              && !(['englishPunctuation', 'japanesePunctuation']
-              .includes(subtoken.type))
-              ? ' '
-              : '';
-              bufferedText += `${leadingWhitespace}${subtoken.value}`;
+              bufferedText += subtoken.value;
             }
             isFirstSubtoken = false;
           }
+          if (bufferedText) {
+            span.insertAdjacentText('beforeend', bufferedText);
+            bufferedText = '';
+          }
+          div.appendChild(span);
+          isFirstNode = false;
         }
-        if (bufferedText) {
-          div.insertAdjacentText('beforeend', bufferedText);
-        }
+        // if (bufferedText) {
+        //   div.insertAdjacentText('beforeend', bufferedText);
+        // }
         fragment.appendChild(div);
         return fragment;
       }
