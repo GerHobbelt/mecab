@@ -108,24 +108,91 @@
       font-size: 16px;
     }
 
-    #richOutput {
-      margin-top: 1em;
-      font-size: 18px;
+    .jisho-is-great {
       font-weight: 600;
-      word-spacing: 0.15em;
-      white-space: pre;
     }
 
-    #richOutput > div {
+    #richOutput {
+      margin-top: 1em;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #current-query {
+      font-size: 18px;
+    }
+
+    #iframeContainer {
+      height: 800px;
+      resize: vertical;
+      overflow: hidden;
+    }
+
+    #iframeContainer > iframe {
+      height: 100%;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #richOutput > div.parsed-sentence {
       margin-bottom: 1.5em;
+      white-space: pre-wrap;
+      word-spacing: 0.15em;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    #richOutput > div.parsed-sentence > span.token {
+      cursor: pointer;
+    }
+
+    #richOutput > div.parsed-sentence > span.token:hover {
+      text-decoration-style: dotted;
+      text-decoration-color: black;
+      text-decoration-line: underline;
+    }
+
+    #submitter {
+      color: white;
+      font-weight: 600;
+      background-color: #0099FF;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      font-size: 16px;
+      padding: 1em 2em;
+      width: 40em;
+    }
+    #submitter:hover {
+      background-color: #00AAFF;
+    }
+    #submitter:active {
+      background-color: #0066FF;
     }
 
     body {
       font-family: "Helvetica Neue", Helvetica, "Lucida Grande", sans-serif;
     }
+
+    footer {
+      padding-bottom: 100px;
+    }
+
+    nav a, nav a:visited, nav a:hover, nav a:active {
+      color: black;
+      text-decoration: none;
+    }
 	</style>
 </head>
 <body>
+  <header>
+    <nav>
+      <a href="https://birchlabs.co.uk/">
+        <div style="display: inline-block; position: relative; top: -1px;">❮</div>
+        <div style="display: inline-block;">Back to Birchlabs</div>
+      </a>
+    </nav>
+  </header>
 	<div class="spinner" id='spinner'></div>
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -134,7 +201,8 @@
     </div>
 
     <h1>MeCab in WebAssembly</h1>
-    <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled to WebAssembly by Alex Birch. References prior <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>.<br>Uses <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> dictionary.<br>Uses <a href="https://github.com/WaniKani/WanaKana">WanaKana</a> for transliteration, additional tokenization, and classification.<br>
+    <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled to WebAssembly.<br>References prior <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>.<br><br>Uses <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> as dataset for MeCab.<br>Uses <a href="https://github.com/WaniKani/WanaKana">WanaKana</a> for transliteration, additional tokenization, and classification.<br>
+      Uses <a href="https://jisho.org/about">Jisho</a> (via iframe) for dictionary lookup &ndash; created by Kim Ahlström, Miwa Ahlström and Andrew Plummer.<br>
     
     <div><small>Licenses:</small></div>
 <details>
@@ -269,9 +337,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 </pre>
 </details>
 <p>
-MeCab suggests where to put spaces.<br>
-MeCab suggests how to pronounce kanji words.<br>
-MeCab deconjugates verbs, revealing the "dictionary form".
+This webpage combines language technologies to suggest where to insert spaces,<br>how to pronounce kanji, and how to find words in a dictionary.<br>
+&mdash; Alex Birch
 </p>
     <!-- <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
@@ -282,10 +349,18 @@ MeCab deconjugates verbs, revealing the "dictionary form".
 太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。
 </textarea>
-        <input id="submitter" type="submit" value="Analyse Japanese">
+        <button id="submitter" type="submit">Analyse Japanese</button>
     </form>
     <!-- <pre id="output"></pre> -->
-    <div id="richOutput"></div>
+    <div id="richOutput">
+      <div id="queryContainer" style="order: 1; display: none;">
+        <p id="current-query">
+          <span class="jisho-is-great">Dictionary lookup (courtesy of <a href="https://jisho.org/about">Jisho</a>):</span><br>
+          <span id="current-query-target">(undefined; sorry)</span>
+        </p>
+        <div id="iframeContainer"></div>
+      </div>
+    </div>
 
     <script type="text/javascript" src="lib/wanakana.min.js"></script>
     <script type='text/javascript'>
@@ -294,6 +369,11 @@ MeCab deconjugates verbs, revealing the "dictionary form".
       const spinnerElement = document.getElementById('spinner');
       const outputElement = document.getElementById('output');
       const richOutputElement = document.getElementById('richOutput');
+      const queryContainerElement = document.getElementById('queryContainer');
+      const iframeContainerElement = document.getElementById('iframeContainer');
+      const currentQueryElement = document.getElementById('current-query');
+      const currentQueryTargetElement = document.getElementById('current-query-target');
+      let iframeElement;
       const wrapped = {};
       const toBeFreed = {
         mecab_model_t: new Set(), // config
@@ -612,6 +692,8 @@ MeCab deconjugates verbs, revealing the "dictionary form".
       function createAnalysisFragment(nodes) {
         const fragment = document.createDocumentFragment();
         const div = document.createElement('div');
+        div.className = 'parsed-sentence';
+        div.style.order = 1;
         let isFirstNode = true;
         let bufferedText = '';
         for (const node of nodes) {
@@ -620,6 +702,8 @@ MeCab deconjugates verbs, revealing the "dictionary form".
             continue;
           }
           const span = document.createElement('span');
+          span.className = 'token';
+          span._mecabToken = node.token;
           let isFirstSubtoken = true;
           for (const subtoken of node.subtokens) {
             if (subtoken.type === 'kanji') {
@@ -664,9 +748,45 @@ MeCab deconjugates verbs, revealing the "dictionary form".
         // outputElement.insertAdjacentText('beforeend', `${pretty}\n`);
         // outputElement.scrollTop = outputElement.scrollHeight;
 
+        Array.from(richOutputElement.children)
+        .sort((left, right) => right.style.order - left.style.order) // descending
+        .forEach((child) => {
+          child.style.order = +child.style.order+1;
+        });
+
         const fragment = createAnalysisFragment(nodes);
-        richOutput.prepend(fragment);
+        richOutputElement.prepend(fragment);
       }, true);
+
+      richOutputElement.addEventListener('click', function(event) {
+        event.stopPropagation();
+        const tokenNode = event.target.className === 'token'
+        ? event.target
+        : event.target.closest('.token');
+        if (tokenNode
+          && tokenNode._mecabToken) {
+          console.log(tokenNode._mecabToken);
+          const sentenceNode = tokenNode.closest('.parsed-sentence');
+          if (!sentenceNode) {
+            throw new Error('DOM not as expected');
+          }
+          +sentenceNode.style.order;
+          Array.from(richOutputElement.children)
+          .filter((element) => element.style.order > +sentenceNode.style.order)
+          .sort((left, right) => right.style.order - left.style.order) // descending
+          .forEach((child) => {
+            child.style.order = +child.style.order+1;
+          });
+          if (!iframeElement) {
+            iframeElement = document.createElement('iframe');
+            iframeContainerElement.appendChild(iframeElement);
+          }
+          currentQueryTargetElement.textContent = tokenNode._mecabToken;
+          queryContainerElement.style.order = +sentenceNode.style.order+1;
+          queryContainerElement.style.display = 'initial';
+          iframeElement.src = `https://jisho.org/search/${encodeURIComponent(tokenNode._mecabToken)}`;
+        }
+      })
 
       const dicdir = '/naist-jdic';
 
@@ -815,5 +935,6 @@ dicdir = ${dicdir}
       };
     </script>
     <script async type="text/javascript" src="mecab.js"></script>
+    <footer></footer>
 </body>
 </html>
