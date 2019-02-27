@@ -4,9 +4,11 @@ mecab.html
 mecab.wasm
 mecab.data
 
-# generate this using edict2-downloader.sh
+# outputs of edict2-downloader.sh
+edict2.gz
+edict2
+edict2.utf8.txt
 edict2.utf16le.txt
-# just for my convenience
 edict2.utf16.txt
 
 # pre-compressed so that Apache doesn't have to gzip them every time
