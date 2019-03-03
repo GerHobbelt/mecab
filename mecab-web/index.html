@@ -963,19 +963,32 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           Promise.all([
             edict2,
             enamdict]
-            ).then((edict2Text, enamdictText) => {
-              const regexp = new RegExp(
-              `(^|[\\[; ])${
-                regExpEscape(tokenNode._mecabToken)
-              }(\\([a-zA-Z]*\\))?[; \\]][^/]* /`, 'm');
-            const edictMatch = regexp.exec(edict2Text);
-            const enamDictMatch = regexp.exec(enamdictText);
-            if (edictMatch !== null) {
-              console.log(edictMatch[0]);
-            }
-            if (enamDictMatch !== null) {
-              console.log(enamDictMatch[0]);
-            }
+            )
+          .then(([edict2Text, enamdictText]) => {
+            const regexp = new RegExp(
+            `^.*(^|[\\[; ])${
+              regExpEscape(tokenNode._mecabToken)
+            }(\\([a-zA-Z]*\\))?[; \\]][^/]* /.*$`, 'mg');
+            // const matches = [];
+            // let match;
+            // while(match = regexp.exec(edict2Text)
+            //   || regexp.exec(enamdictText)) {
+            //   matches.push(match[0]);
+            // }
+            // console.log(matches);
+            // while(enamDictMatch = regexp.exec(edict2Text)) {
+            //   matches.push(enamDictMatch);
+            // }
+            // const enamDictMatch = regexp.exec(enamdictText);
+            // if (edictMatch !== null) {
+            //   console.log(edictMatch[0]);
+            // }
+            // if (enamDictMatch !== null) {
+            //   console.log(enamDictMatch[0]);
+            // }
+            const matches = (edict2Text.match(regexp) || [])
+            .concat((enamdictText.match(regexp) || []));
+            console.log(matches);
           });
         }
       }
