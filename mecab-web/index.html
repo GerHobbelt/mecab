@@ -470,7 +470,13 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     </div>
 
     <script type="text/javascript" src="lib/wanakana.min.js"></script>
-    <script type="module" src="src/index.js"></script>
+    <script type="module">
+      import { handleTokenClickEdict2 } from './src/index.js';
+      
+      Object.assign(window, {
+        handleTokenClickEdict2,
+      });
+    </script>
     <script type="text/javascript">
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');

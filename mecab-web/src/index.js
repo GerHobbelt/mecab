@@ -45,6 +45,6 @@ function handleTokenClickEdict2(event) {
   }
 }
 
-Object.assign(window, {
+export {
 	handleTokenClickEdict2,
-});
+};
