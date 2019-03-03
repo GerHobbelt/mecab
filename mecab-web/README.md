@@ -4,7 +4,7 @@ This project compiles mecab to WebAssembly, using Emscripten.
 Refers to [fasiha's mecab-emscripten](https://github.com/fasiha/mecab-emscripten), which targeted JS.  
 Uses [https://github.com/WaniKani/WanaKana](WanaKana) (MIT license) for transliteration, additional tokenization, and classification.
 
-See a live demo [on Birchlabs](https://birchlabs.co.uk/wasm/index.html).
+See a live demo [on Birchlabs](https://birchlabs.co.uk/mecab-web/index.html).
 
 Japanese is a language without spaces. MeCab suggests where to put spaces.  
 MeCab suggests how to pronounce kanji words.  
