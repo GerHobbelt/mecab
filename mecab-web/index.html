@@ -182,6 +182,10 @@
       background-color: #0066FF;
     }
 
+    #submitter[disabled] {
+      background-color: #69777F;
+    }
+
     body {
       font-family: "Helvetica Neue", Helvetica, "Lucida Grande", sans-serif;
     }
@@ -215,11 +219,13 @@
 	<div class="emscripten">
       <progress value="0" max="100" id="progress" hidden=1></progress>
     </div>
+    <div id="edict2-loading">Downloading embedded dictionary (EDICT2)...</div>
+    <div id="enamdict-loading">Downloading embedded dictionary of names (ENAMDICT)...</div>
 
     <h1>MeCab in WebAssembly</h1>
     <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled to WebAssembly.<br>References prior <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>.<br><br>Uses <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> as dataset for MeCab.<br>Uses <a href="https://github.com/WaniKani/WanaKana">WanaKana</a> for transliteration, additional tokenization, and classification.<br>
       Uses <a href="https://jisho.org/about">Jisho</a> for external dictionary lookup &ndash; created by Kim Ahlström, Miwa Ahlström and Andrew Plummer.<br>
-      Uses <a href="https://jisho.org/about">EDICT2</a> for internal dictionary lookup &ndash; created by Jim Breen.<br>
+      Uses <a href="http://www.edrdg.org/jmdict/edict_doc.html">EDICT2</a> and <a href="http://www.edrdg.org/enamdict/enamdict_doc.html">ENAMDICT</a> for embedded dictionary lookup &ndash; created by Jim Breen.<br>
     
     <div><small>Licenses:</small></div>
 <details>
@@ -354,7 +360,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 </pre>
 </details>
 <details>
-  <summary><small>EDICT2 (CC BY-SA 3.0)</small></summary>
+  <summary><small>EDICT2 and ENAMDICT (CC BY-SA 3.0)</small></summary>
   See <a href="http://www.edrdg.org/edrdg/licence.html">Electronic Dictionary Research And Development licenses</a>.
 <pre>
 Creative Commons
@@ -447,7 +453,7 @@ This webpage combines language technologies to suggest where to insert spaces,<b
 太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。
 </textarea>
-        <button id="submitter" type="submit">Analyse Japanese</button>
+        <button id="submitter" type="submit" disabled>Analyse Japanese</button>
     </form>
     <!-- <pre id="output"></pre> -->
     <div id="richOutput">
@@ -469,6 +475,7 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
       const outputElement = document.getElementById('output');
+      const submitterElement = document.getElementById('submitter')
       const richOutputElement = document.getElementById('richOutput');
       const definitionElement = document.getElementById('definition');
       const definitionTokenElement = document.getElementById('definition-token');
@@ -489,7 +496,15 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       // const td = new TextDecoder('utf-16le');
       // .then((response)=>response.arrayBuffer())
       const edict2 = fetch('edict2.utf8.txt')
-      .then((response)=>response.text());
+      .then((response)=> {
+        document.getElementById('edict2-loading').classList.add('hidden');
+        return response.text();
+      });
+      const enamdict = fetch('enamdict.utf8.txt')
+      .then((response)=> {
+        document.getElementById('enamdict-loading').classList.add('hidden');
+        return response.text();
+      });
 
       /**
       I ended up not needing this in the end, but it does a cool thing:
@@ -945,11 +960,21 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           queryContainerElement.style.order = +sentenceNode.style.order+1;
           queryContainerElement.style.display = 'initial';
           definitionElement.classList.remove('hidden');
-          edict2.then((text) => {
-            const match = new RegExp(`^([^ ]*;)*${regExpEscape(tokenNode._mecabToken)}( |;).* /.*$`, 'm')
-            .exec(text);
-            if (match !== null) {
-              console.log(match[0]);
+          Promise.all([
+            edict2,
+            enamdict]
+            ).then((edict2Text, enamdictText) => {
+              const regexp = new RegExp(
+              `(^|[\\[; ])${
+                regExpEscape(tokenNode._mecabToken)
+              }(\\([a-zA-Z]*\\))?[; \\]][^/]* /`, 'm');
+            const edictMatch = regexp.exec(edict2Text);
+            const enamDictMatch = regexp.exec(enamdictText);
+            if (edictMatch !== null) {
+              console.log(edictMatch[0]);
+            }
+            if (enamDictMatch !== null) {
+              console.log(enamDictMatch[0]);
             }
           });
         }
@@ -1036,7 +1061,8 @@ dicdir = ${dicdir}
 
           p_currentTagger = p_tagger;
 
-          document.getElementById('submitter').click();
+          submitterElement.removeAttribute('disabled');
+          submitterElement.click();
         }],
         print: (function() {
           // var element = document.getElementById('output');
