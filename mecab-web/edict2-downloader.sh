@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 wget http://ftp.monash.edu/pub/nihongo/edict2.gz
 gzip -d edict2.gz
-# UTF8 is probably most storage-efficient for EDICT2, since most of the document is the Engllish definitions.
+# EUC-JP is the original and most storage-efficient format for EDICT2.
+# cp edict2 edict2.eucjp.txt
+# UTF8 is almost as small as EUC-JP (especially when gzipped)
+# it's a better fit than UTF16, since there's a lot of English definitions in the document.
 iconv -f EUC-JP -t UTF-8 edict2 > edict2.utf8.txt
 # UTF16 is storage-efficient for CJK text generally. NodeJS supports low-endian.
 # iconv -f EUC-JP -t UTF-16LE edict2 > edict2.utf16le.txt

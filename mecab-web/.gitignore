@@ -7,12 +7,16 @@ mecab.data
 # outputs of edict2-downloader.sh
 edict2.gz
 edict2
+edict2.eucjp.txt
 edict2.utf8.txt
-edict2.utf16le.txt
 edict2.utf16.txt
+edict2.utf16le.txt
 
 # pre-compressed so that Apache doesn't have to gzip them every time
 mecab.js.gz
 mecab.wasm.gz
 mecab.data.gz
+edict2.eucjp.txt.gz
+edict2.utf8.txt.gz
+edict2.utf16.txt.gz
 edict2.utf16le.txt.gz
