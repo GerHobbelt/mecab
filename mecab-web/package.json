@@ -1,0 +1,30 @@
+{
+  "name": "mecab-web",
+  "version": "1.0.0",
+  "description": "This project compiles mecab to WebAssembly, using Emscripten.   Refers to [fasiha's mecab-emscripten](https://github.com/fasiha/mecab-emscripten), which targeted JS.   Uses [https://github.com/WaniKani/WanaKana](WanaKana) (MIT license) for transliteration, additional tokenization, and classification.",
+  "main": "src/index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "htm": "^2.1.1",
+    "preact": "^8.4.2",
+    "wanakana": "^4.0.2"
+  },
+  "devDependencies": {
+    "@pika/web": "^0.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Birch-san/mecab.git"
+  },
+  "author": "Alex Birch",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/Birch-san/mecab/issues"
+  },
+  "homepage": "https://github.com/Birch-san/mecab#readme"
+}

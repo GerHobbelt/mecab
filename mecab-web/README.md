@@ -10,6 +10,10 @@ Japanese is a language without spaces. MeCab suggests where to put spaces.
 MeCab suggests how to pronounce kanji words.  
 MeCab deconjugates verbs, revealing the "dictionary form".
 
+## License
+
+BSD-3-Clause
+
 ## Building
 
 
@@ -32,7 +36,11 @@ cp src/.libs/mecab src/.libs/mecab.bc
 # emit WebAssembly from LLVM IR
 # note: on Linux, the .dylib would be .so
 em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o ../mecab-web/mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2', '_mecab_model_new2', '_mecab_model_destroy', '_mecab_strerror', '_mecab_model_new_tagger', '_mecab_destroy', '_mecab_nbest_sparse_tostr', '_mecab_sparse_tostr']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "addOnExit"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file ../mecab-naist-jdic/dist@naist-jdic/
+
 cd ..
+cd mecab-web
+npm install
+npx @pika/web
 
 # now view mecab-web/index.html
 ```
