@@ -955,6 +955,20 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         }
       }
 
+/*
+new RegExp(`^([^ ]*;)*${regExpEscape('この')};? |;).* /.*$`, 'm').exec(
+`
+２次局 [にじきょく] /(n) {comp} secondary station/EntL2276990X/
+２進−５進;２進５進 [にしんごしん] /(n) {comp} biquinary/EntL2277000/
+此の(P);斯の [この] /(adj-pn) (uk) (See 何の・どの,此れ・1,其の・1,彼の) this (something or someone close to the speaker (including the speaker), or ideas expressed by the speaker)/(P)/EntL1582920X/
+`
+
+// https://regex101.com/
+// forward-slash may need unescaping
+// (^|[\[; ])此の(\([a-zA-Z]*\))?[; \]][^\/]* \/
+*/
+
+
       const dicdir = '/naist-jdic';
 
       var Module = {
