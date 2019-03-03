@@ -969,31 +969,22 @@ This webpage combines language technologies to suggest where to insert spaces,<b
             `^.*(^|[\\[; ])${
               regExpEscape(tokenNode._mecabToken)
             }(\\([a-zA-Z]*\\))?[; \\]][^/]* /.*$`, 'mg');
-            // const matches = [];
-            // let match;
-            // while(match = regexp.exec(edict2Text)
-            //   || regexp.exec(enamdictText)) {
-            //   matches.push(match[0]);
-            // }
-            // console.log(matches);
-            // while(enamDictMatch = regexp.exec(edict2Text)) {
-            //   matches.push(enamDictMatch);
-            // }
-            // const enamDictMatch = regexp.exec(enamdictText);
-            // if (edictMatch !== null) {
-            //   console.log(edictMatch[0]);
-            // }
-            // if (enamDictMatch !== null) {
-            //   console.log(enamDictMatch[0]);
-            // }
-            const matches = (edict2Text.match(regexp) || [])
-            .concat((enamdictText.match(regexp) || []));
-            console.log(matches);
+            const edict2Matches = (edict2Text.match(regexp) || []);
+            const enamDictMatches = (enamdictText.match(regexp) || []);
 
-            const parsedMatches = matches.map(parseEdictLine);
+            const parsedMatches = {
+              edict2: edict2Matches.map(parseEdictLine.bind(null, parseEdictMeaningSection)),
+              enamdict: enamDictMatches.map(parseEdictLine.bind(null, parseEnamdictMeaningSection)),
+            }
             console.log(parsedMatches);
           });
         }
+      }
+
+      function parseEdictMeaningSection(meaningSection) {
+      }
+
+      function parseEnamdictMeaningSection(meaningSection) {
       }
 
       // http://edrdg.org/jmdict/edict_doc_old.html
@@ -1075,8 +1066,8 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         'X': "rude or X-rated term (not displayed in educational software)",
       };
 
-      function parseEdictLine(line) {
-        const [indexSection, detailSection] = line.split('/', 2);
+      function parseEdictLine(glossParser, line) {
+        const [indexSection, meaningSection] = line.split('/', 2);
         const [headwordSection, readingSection] = indexSection.split(' ', 2);
         function parseEntrySection(section) {
           const entries = section.split(';');
@@ -1118,7 +1109,12 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         if (readingSectionInner && readingSectionInner.length > 1) {
           readings = parseEntrySection(readingSectionInner[1]);
         }
-        return { headwords, readings };
+
+        return {
+          headwords,
+          readings,
+          meaning: glossParser(meaningSection),
+        };
       }
 
       const dicdir = '/naist-jdic';
