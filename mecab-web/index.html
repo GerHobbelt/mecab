@@ -469,10 +469,8 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       </div>
     </div>
 
-    <!-- <script type="text/javascript" src="lib/es-module-shims.min.js"></script> -->
-<script type="module">
-import { handleFormSubmitted } from './src/index.js';
-// const indexImport = importShim('./src/index.js');
+    <script type="module">
+      import { handleFormSubmitted } from './src/index.js';
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
@@ -649,7 +647,6 @@ dicdir = ${dicdir}
         currentPointers,
         Module,
       });
-// });
     </script>
     <script defer type="text/javascript" src="mecab.js"></script>
     <footer></footer>
