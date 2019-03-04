@@ -16,6 +16,15 @@ const enamdict = fetch('enamdict.utf8.txt')
   return response.text();
 });
 
+const outputElement = document.getElementById('output');
+const definitionElement = document.getElementById('definition');
+const definitionTokenElement = document.getElementById('definition-token');
+const queryContainerElement = document.getElementById('queryContainer');
+const iframeContainerElement = document.getElementById('iframeContainer');
+const currentQueryElement = document.getElementById('current-query');
+const currentQueryTargetElement = document.getElementById('current-query-target');
+let iframeElement;
+
 function handleTokenClickEdict2(event) {
   const tokenNode = event.target.className === 'token3'
   ? event.target
@@ -140,12 +149,6 @@ function handleTokenClickJishoIframe(event) {
   }
 }
 
-/** @author bobince
-  * @see https://stackoverflow.com/a/3561711/5257399 */
-function regExpEscape(s) {
-    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
-
 const richOutputElement = document.getElementById('richOutput');
 
 function handleFormSubmitted() {
@@ -174,11 +177,6 @@ richOutputElement.addEventListener('click', function(event) {
   }
 });
 
-const {
-  wrapped,
-  currentPointers,
-} = window;
-
 function parse(sentence) {
   const whitespaces = [];
   const r = new RegExp('[\\s　]+', 'g');
@@ -190,7 +188,7 @@ function parse(sentence) {
     */
     whitespaces.push(match);
   }
-  const mecabOutput = wrapped.mecab_sparse_tostr(currentPointers.tagger, sentence);
+  const mecabOutput = window.wrapped.mecab_sparse_tostr(window.currentPointers.tagger, sentence);
   console.log(mecabOutput);
   const mecabTokens = toMecabTokens(mecabOutput);
   const plusOriginalWhitespaces = withWhitespacesSplicedBackIn(mecabTokens, whitespaces);

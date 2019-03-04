@@ -65,6 +65,12 @@ function parseEdictLine(glossParser, line) {
   };
 }
 
+/** @author bobince
+  * @see https://stackoverflow.com/a/3561711/5257399 */
+function regExpEscape(s) {
+    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
 function edictLookup([edict2Text, enamdictText], term) {
 	const regexp = new RegExp(
   `^(.*(^|[\\[;])${
@@ -72,6 +78,7 @@ function edictLookup([edict2Text, enamdictText], term) {
   }[\\]\\(; ].*)$`, 'mg');
   const edict2Matches = (edict2Text.match(regexp) || []);
   const enamDictMatches = (enamdictText.match(regexp) || []);
+  console.log(edict2Matches);
 
   return {
     edict2: edict2Matches.map(parseEdictLine.bind(null, parseEdictMeaningSection)),

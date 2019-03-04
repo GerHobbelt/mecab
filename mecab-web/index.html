@@ -469,22 +469,15 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       </div>
     </div>
 
-    <script type="text/javascript" src="lib/es-module-shims.min.js"></script>
-    <script type="text/javascript">
-const indexImport = importShim('./src/index.js');
+    <!-- <script type="text/javascript" src="lib/es-module-shims.min.js"></script> -->
+<script type="module">
+import { handleFormSubmitted } from './src/index.js';
+// const indexImport = importShim('./src/index.js');
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
-      const outputElement = document.getElementById('output');
-      const submitterElement = document.getElementById('submitter')
-      const definitionElement = document.getElementById('definition');
-      const definitionTokenElement = document.getElementById('definition-token');
-      const queryContainerElement = document.getElementById('queryContainer');
-      const iframeContainerElement = document.getElementById('iframeContainer');
-      const currentQueryElement = document.getElementById('current-query');
-      const currentQueryTargetElement = document.getElementById('current-query-target');
-      let iframeElement;
+      const submitterElement = document.getElementById('submitter');
       const wrapped = {};
       const toBeFreed = {
         mecab_model_t: new Set(), // config
@@ -496,17 +489,12 @@ const indexImport = importShim('./src/index.js');
         lattice: undefined,
       }
 
-      Object.assign(window, {
-        wrapped,
-        currentPointers,
-      })
-
       document.getElementById('form').addEventListener('submit', function(event) {
         event.preventDefault();
-        indexImport
-        .then(({ handleFormSubmitted }) => {
-          handleFormSubmitted();
-        });
+        handleFormSubmitted();
+        // indexImport
+        // .then(({ handleFormSubmitted }) => {
+        // });
       });
 
       const dicdir = '/naist-jdic';
@@ -655,9 +643,15 @@ dicdir = ${dicdir}
           if (text) Module.printErr('[post-exception status] ' + text);
         };
       };
+
+      Object.assign(window, {
+        wrapped,
+        currentPointers,
+        Module,
+      });
 // });
     </script>
-    <script async type="text/javascript" src="mecab.js"></script>
+    <script defer type="text/javascript" src="mecab.js"></script>
     <footer></footer>
 </body>
 </html>
