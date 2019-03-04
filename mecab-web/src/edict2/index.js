@@ -1,6 +1,7 @@
 import edictAbbr from './abbrev.js';
 
 function parseEdictMeaningSection(meaningSection) {
+	console.log(meaningSection);
 }
 
 function parseEnamdictMeaningSection(meaningSection) {
@@ -78,7 +79,6 @@ function edictLookup([edict2Text, enamdictText], term) {
   }[\\]\\(; ].*)$`, 'mg');
   const edict2Matches = (edict2Text.match(regexp) || []);
   const enamDictMatches = (enamdictText.match(regexp) || []);
-  console.log(edict2Matches);
 
   return {
     edict2: edict2Matches.map(parseEdictLine.bind(null, parseEdictMeaningSection)),
