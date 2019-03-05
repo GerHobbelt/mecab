@@ -1,7 +1,9 @@
 import { toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
 import { edictLookup } from './edict2/index.js';
-import { createElement, Component } from '../web_modules/preact.js';
+import { createElement, /*Component,*/ render } from '../web_modules/preact.js';
+import { useState } from '../web_modules/preact--hooks.js';
 import htm from '../web_modules/htm.js';
+const html = htm.bind(createElement);
 
 // const td = new TextDecoder('utf-16le');
 // .then((response)=>response.arrayBuffer())
@@ -52,10 +54,24 @@ function handleTokenClickEdict2(event) {
       enamdict]
       )
     .then((dictionaries) => {
-      console.log(edictLookup(dictionaries, tokenNode._mecabToken));
+      const results = edictLookup(dictionaries, tokenNode._mecabToken);
     });
   }
 }
+
+
+const Lol = ({lol}) => {
+  const [count, setCount] = useState(0);
+  return html`
+    <div>
+      <div>Count:${count}</div>
+      <div>Lol:${lol}</div>
+      <button onClick=${() => setCount(count + 1)}>increment</button>
+    </div>
+  `;
+};
+render(html`<${Lol} lol="hey" />`, document.getElementById('managed'));
+
 
 function createAnalysisFragment(nodes) {
   const fragment = document.createDocumentFragment();
