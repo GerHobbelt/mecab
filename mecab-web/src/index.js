@@ -2,6 +2,7 @@ import { toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces }
 import { edictLookup } from './edict2/index.js';
 import { createElement, /*Component,*/ render } from '../web_modules/preact.js';
 import { useState } from '../web_modules/preact--hooks.js';
+import { Provider, connect, createStore } from '../web_modules/unistore--full/preact.es.js';
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
 
@@ -59,15 +60,42 @@ function handleTokenClickEdict2(event) {
   }
 }
 
+const initialState = {
+  lols: 5,
+};
+
+const store = createStore((state, action) => {
+  return state;
+},
+initialState,
+typeof devToolsExtension === 'function'
+? devToolsExtension()
+: undefined
+);
+
+const Child = connect(
+  // mapStateToProps
+  (state, ownProps) => state,
+  // mapDispatchToProps
+  (dispatch, ownProps) => ({}),
+)( ({ dispatch }) => {
+  return html`
+  <div>Child
+  </div>
+  `
+} );
 
 const Lol = ({lol}) => {
   const [count, setCount] = useState(0);
   return html`
+  <${Provider} store=${store}>
+    <${Child} />
     <div>
       <div>Count:${count}</div>
       <div>Lol:${lol}</div>
       <button onClick=${() => setCount(count + 1)}>increment</button>
     </div>
+  <//>
   `;
 };
 render(html`<${Lol} lol="hey" />`, document.getElementById('managed'));

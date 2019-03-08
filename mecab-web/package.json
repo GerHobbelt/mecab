@@ -7,16 +7,22 @@
     "lib": "lib"
   },
   "dependencies": {
-    "hookuspocus": "^0.2.1",
     "htm": "^2.1.1",
     "preact": "^10.0.0-alpha.0",
+    "unistore": "^3.2.1",
     "wanakana": "^4.0.2"
   },
   "devDependencies": {
     "@pika/web": "^0.2.0"
   },
   "@pika/web": {
-    "webDependencies": ["htm", "preact", "preact/hooks", "wanakana"]
+    "webDependencies": [
+      "htm",
+      "preact",
+      "preact/hooks",
+      "unistore/full/preact.es.js",
+      "wanakana"
+    ]
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
