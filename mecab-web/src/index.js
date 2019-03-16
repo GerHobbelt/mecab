@@ -5,6 +5,9 @@ import { useState } from '../web_modules/preact--hooks.js';
 import { Provider, connect, createStore } from '../web_modules/unistore--full/preact.es.js';
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
+Provider.prototype.render = function(props) {
+  return props.children;
+};
 
 // const td = new TextDecoder('utf-16le');
 // .then((response)=>response.arrayBuffer())
@@ -70,19 +73,27 @@ const actions = (store) => ({
     return {...state, lols: state.lols+1 }
   },
   setReady(state, ready) {
+    console.log(state, ready);
     return {...state, ready: ready, }
   },
 });
 
-store.setState(
-  actions(store)
-  .increment(store.getState()));
+function act(store, actionsObj, action, ...args) {
+  return store.setState(
+    actionsObj[action](
+      store.getState(),
+      ...args));
+}
+const actor = act.bind(null, store, actions(store));
+const boundActions = Object.assign({}, 
+  ...Object.keys(actions(store))
+    .map(action => ({
+      [action]: actor.bind(null, action),
+    })),
+);
 
-setInterval(() => {
-  store.setState(
-    actions(store)
-    .increment(store.getState()));
-  }, 1000);
+boundActions.increment();
+setInterval(boundActions.increment, 1000);
 
 const monkeyPatchSetState = component => {
   if (!component) {
@@ -100,29 +111,30 @@ const monkeyPatchSetState = component => {
 };
 
 const Child = connect('lols', actions)(
-  ({ lols, increment }) => {
+  (props) => {
   return html`
-  <div>Child lols=${lols}
-    <button onClick=${increment}>increment</button>
-  </div>
+  <div>Child lols=${props.lols}
+    <button onClick=${props.increment}>increment<//>
+  <//>
   `
 } );
 
-const Lol = ({lol}) => {
+const App = connect('ready', actions)(
+  (props) => {
   const [count, setCount] = useState(0);
   return html`
-  <${Provider} store=${store}>
     <${Child} ref=${monkeyPatchSetState} />
     <div>
-      <div>Count:${count}</div>
-      <div>Lol:${lol}</div>
-      <button onClick=${() => setCount(count + 1)}>increment</button>
-    </div>
-    <button class="submitter" type="submit" disabled>Analyse Japanese</button>
-  <//>
+      <div>Count:${count}<//>
+      <button onClick=${() => setCount(count + 1)}>increment<//>
+    <//>
   `;
-};
-render(html`<${Lol} lol="hey" />`, document.getElementById('managed'));
+} );
+render(html`
+  <${Provider} store=${store}>
+    <${App} ref=${monkeyPatchSetState} />
+  <//>
+  `, document.getElementById('managed'));
 
 function createAnalysisFragment(nodes) {
   const fragment = document.createDocumentFragment();
@@ -266,4 +278,5 @@ function parse(sentence) {
 export {
 	handleFormSubmitted,
 	handleTokenClickEdict2,
+  boundActions,
 };

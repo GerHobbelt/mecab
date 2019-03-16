@@ -63,7 +63,11 @@ This webpage combines language technologies to suggest where to insert spaces,<b
 
     <script type="module">
       import ModuleConsumer from './mecab.js';
-      import { handleFormSubmitted } from './src/index.js';
+      import {
+        handleFormSubmitted,
+        boundActions as actions,
+      } from './src/index.js';
+      console.log(actions);
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
@@ -151,6 +155,7 @@ dicdir = ${dicdir}
           toBeFreed.mecab_t.add(p_tagger);
 
           currentPointers.tagger = p_tagger;
+          actions.setReady(true);
 
           submitterElement.removeAttribute('disabled');
           submitterElement.click();
