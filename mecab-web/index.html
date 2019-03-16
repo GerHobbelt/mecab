@@ -62,6 +62,7 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     </div>
 
     <script type="module">
+      import ModuleConsumer from './mecab.js';
       import { handleFormSubmitted } from './src/index.js';
 
       const statusElement = document.getElementById('status');
@@ -99,8 +100,8 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           return prefix + path;
         },
         preRun: [function() {
-          FS.createPath('/', 'usr/local/etc')
-          FS.writeFile('/usr/local/etc/mecabrc', `\
+          Module.FS.createPath('/', 'usr/local/etc')
+          Module.FS.writeFile('/usr/local/etc/mecabrc', `\
 ;
 ; Configuration file of MeCab
 ;
@@ -234,10 +235,9 @@ dicdir = ${dicdir}
       Object.assign(window, {
         wrapped,
         currentPointers,
-        Module,
       });
+      ModuleConsumer(Module);
     </script>
-    <script defer type="text/javascript" src="mecab.js"></script>
     <footer></footer>
 </body>
 </html>

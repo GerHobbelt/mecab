@@ -35,7 +35,30 @@ emconfigure ./configure --with-charset=utf8 && emmake make
 cp src/.libs/mecab src/.libs/mecab.bc
 # emit WebAssembly from LLVM IR
 # note: on Linux, the .dylib would be .so
-em++ src/.libs/mecab.bc src/.libs/libmecab.dylib -o ../mecab-web/mecab.html -s EXPORTED_FUNCTIONS="['_mecab_do2', '_mecab_model_new2', '_mecab_model_destroy', '_mecab_strerror', '_mecab_model_new_tagger', '_mecab_destroy', '_mecab_nbest_sparse_tostr', '_mecab_sparse_tostr']" -s EXTRA_EXPORTED_RUNTIME_METHODS='["cwrap", "addOnExit"]' --no-heap-copy -s ALLOW_MEMORY_GROWTH=1 --preload-file ../mecab-naist-jdic/dist@naist-jdic/
+em++ \
+src/.libs/mecab.bc \
+src/.libs/libmecab.dylib \
+-o ../mecab-web/mecab.html \
+-s EXPORTED_FUNCTIONS="[
+'_mecab_do2',
+'_mecab_model_new2',
+'_mecab_model_destroy',
+'_mecab_strerror',
+'_mecab_model_new_tagger',
+'_mecab_destroy',
+'_mecab_nbest_sparse_tostr',
+'_mecab_sparse_tostr'
+]" \
+-s MODULARIZE=1 \
+-s EXPORT_ES6=1 \
+-s EXTRA_EXPORTED_RUNTIME_METHODS='[
+"cwrap",
+"addOnExit",
+"FS"
+]' \
+--no-heap-copy \
+-s ALLOW_MEMORY_GROWTH=1 \
+--preload-file ../mecab-naist-jdic/dist@naist-jdic/
 
 cd ..
 cd mecab-web

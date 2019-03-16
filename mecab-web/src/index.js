@@ -60,27 +60,50 @@ function handleTokenClickEdict2(event) {
   }
 }
 
-const initialState = {
+const store = createStore({
+  ready: false,
   lols: 5,
+});
+
+const actions = (store) => ({
+  increment(state) {
+    return {...state, lols: state.lols+1 }
+  },
+  setReady(state, ready) {
+    return {...state, ready: ready, }
+  },
+});
+
+store.setState(
+  actions(store)
+  .increment(store.getState()));
+
+setInterval(() => {
+  store.setState(
+    actions(store)
+    .increment(store.getState()));
+  }, 1000);
+
+const monkeyPatchSetState = component => {
+  if (!component) {
+    return component;
+  }
+  // console.log(component);
+  // component.setState = component.forceUpdate;
+  const origSetState = component.setState;
+  component.setState = function(state, props) {
+    if (state == null) {
+      state = {}
+    };
+    return origSetState.call(this, state, props);
+  };
 };
 
-const store = createStore((state, action) => {
-  return state;
-},
-initialState,
-typeof devToolsExtension === 'function'
-? devToolsExtension()
-: undefined
-);
-
-const Child = connect(
-  // mapStateToProps
-  (state, ownProps) => state,
-  // mapDispatchToProps
-  (dispatch, ownProps) => ({}),
-)( ({ dispatch }) => {
+const Child = connect('lols', actions)(
+  ({ lols, increment }) => {
   return html`
-  <div>Child
+  <div>Child lols=${lols}
+    <button onClick=${increment}>increment</button>
   </div>
   `
 } );
@@ -89,17 +112,17 @@ const Lol = ({lol}) => {
   const [count, setCount] = useState(0);
   return html`
   <${Provider} store=${store}>
-    <${Child} />
+    <${Child} ref=${monkeyPatchSetState} />
     <div>
       <div>Count:${count}</div>
       <div>Lol:${lol}</div>
       <button onClick=${() => setCount(count + 1)}>increment</button>
     </div>
+    <button class="submitter" type="submit" disabled>Analyse Japanese</button>
   <//>
   `;
 };
 render(html`<${Lol} lol="hey" />`, document.getElementById('managed'));
-
 
 function createAnalysisFragment(nodes) {
   const fragment = document.createDocumentFragment();
