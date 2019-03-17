@@ -118,7 +118,11 @@ const monkeyPatchSetState = component => {
   };
 };
 
-const Word = ({ theValue, reading }) => {
+const Word = ({ children }) => {
+  return html`<span class="token4">${children}<//>`
+  };
+
+const Rubied = ({ theValue, reading }) => {
   return html`<ruby>
     <rb>${theValue}<//>
     <rt>${reading}<//>
@@ -168,7 +172,7 @@ const Sentence = ({ nodes }) => {
           bufferedText = '';
           output = boundHtmlConcat(output, bufferedText);
         }
-        output = html`${output}<${Word} theValue=${subtoken.value} reading=${subtoken.reading} />`;
+        output = html`${output}<${Rubied} theValue=${subtoken.value} reading=${subtoken.reading} />`;
         return {
           bufferedText,
           output,
@@ -191,7 +195,7 @@ const Sentence = ({ nodes }) => {
 
     return {
       bufferedText,
-      output: html`${acc.output}<span class="token4">${output}<//>`,
+      output: html`${acc.output}<${Word} children=${output}><//>`,
     };
   };
 
