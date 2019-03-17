@@ -40,15 +40,15 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     </div> -->
     <form id="form">
         <!-- <input id="args" name="args" value="-o output.txt input.txt" placeholder="-o output.txt input.txt"> -->
-        <textarea id="input" name="input">
+        <textarea id="input" class="input" name="input">
 太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。
 </textarea>
-        <button id="submitter" type="submit" disabled>Analyse Japanese</button>
+        <button id="submitter" class="submitter" type="submit" disabled>Analyse Japanese</button>
     </form>
     <div id="managed"></div>
     <!-- <pre id="output"></pre> -->
-    <div id="richOutput">
+    <div id="richOutput" class="richOutput">
       <div id="queryContainer" style="order: 1; display: none;">
         <p id="current-query" class="hidden">
           <span class="jisho-is-great">Dictionary lookup (courtesy of <a href="https://jisho.org/about">Jisho</a>):</span><br>
@@ -67,7 +67,6 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         handleFormSubmitted,
         boundActions as actions,
       } from './src/index.js';
-      console.log(actions);
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');

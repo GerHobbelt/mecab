@@ -1,7 +1,7 @@
 import { toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
 import { edictLookup } from './edict2/index.js';
 import { createElement, /*Component,*/ render } from '../web_modules/preact.js';
-import { useState } from '../web_modules/preact--hooks.js';
+import { useState, useEffect } from '../web_modules/preact--hooks.js';
 import { Provider, connect, createStore } from '../web_modules/unistore--full/preact.es.js';
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
@@ -66,16 +66,24 @@ function handleTokenClickEdict2(event) {
 const store = createStore({
   ready: false,
   lols: 5,
+//   query: `太郎はこの本を二郎を見た女性に渡した。
+// すもももももももものうち。`,
+  // parsedQueries: [],
 });
 
 const actions = (store) => ({
   increment(state) {
-    return {...state, lols: state.lols+1 }
+    return { ...state, lols: state.lols+1 }
   },
   setReady(state, ready) {
-    console.log(state, ready);
-    return {...state, ready: ready, }
+    return { ...state, ready, }
   },
+  // setQuery(state, query) {
+  //   return { ...state, query, }
+  // },
+  // addParsedQuery(state, parsedQuery) {
+  //   return { ...state, parsedQueries: [parsedQuery, ...state.parsedQueries], }
+  // },
 });
 
 function act(store, actionsObj, action, ...args) {
@@ -110,26 +118,130 @@ const monkeyPatchSetState = component => {
   };
 };
 
-const Child = connect('lols', actions)(
-  (props) => {
+const Word = ({ theValue, reading }) => {
+  return html`<ruby>
+    <rb>${theValue}<//>
+    <rt>${reading}<//>
+  <//>`
+  };
+
+/**
+ * Returns simpler output for special cases
+ * html`${'lol'}${'what'}` = ['lol','what']
+ * htmlConcat(html, html`${'lol'}`, html`${'what'}`) = 'lolwhat'
+ */
+function htmlConcat(html, left, right) {
+  if (!left) {
+    return right;
+  }
+  if (!right) {
+    return left;
+  }
+  if (typeof left === 'string' && typeof right === 'string') {
+    return left + right;
+  }
+  return html`${left}${right}`;
+}
+const boundHtmlConcat = htmlConcat.bind(null, html);
+
+// console.log(html`''`);
+
+// if we want this connected to the store, we'll need a workaround
+// otherwise the whole list will undergo re-render when any item is added
+// https://stackoverflow.com/a/38726478/5257399
+const Sentence = ({ nodes }) => {
+
+  const renderNode = (acc, node) => {
+    if (node.isWhitespace) {
+      return {
+        bufferedText: acc.bufferedText,
+        output: boundHtmlConcat(acc.output, node.token),
+      };
+    }
+
+    const reducedSubtokens = node.subtokens.reduce(({
+      bufferedText,
+      output,
+    }, subtoken) => {
+      if (subtoken.type === 'kanji') {
+        if (bufferedText) {
+          bufferedText = '';
+          output = boundHtmlConcat(output, bufferedText);
+        }
+        output = html`${output}<${Word} theValue=${subtoken.value} reading=${subtoken.reading} />`;
+        return {
+          bufferedText,
+          output,
+        }
+      }
+      return {
+        bufferedText: bufferedText + subtoken.value,
+        output,
+      }
+    }, {
+      bufferedText: acc.bufferedText,
+      output: '',
+    });
+
+    let { bufferedText, output } = reducedSubtokens;
+    if (bufferedText) {
+      output = boundHtmlConcat(output, reducedSubtokens.bufferedText),
+      bufferedText = '';
+    }
+
+    return {
+      bufferedText,
+      output: html`${acc.output}<span class="token4">${output}<//>`,
+    };
+  };
+
   return html`
-  <div>Child lols=${props.lols}
-    <button onClick=${props.increment}>increment<//>
+  <div class="parsed-sentence">
+    ${nodes.reduce(renderNode, {
+      bufferedText: '',
+      output: '',
+    }).output}
   <//>
   `
-} );
+};
 
 const App = connect('ready', actions)(
-  (props) => {
-  const [count, setCount] = useState(0);
-  return html`
-    <${Child} ref=${monkeyPatchSetState} />
-    <div>
-      <div>Count:${count}<//>
-      <button onClick=${() => setCount(count + 1)}>increment<//>
-    <//>
-  `;
-} );
+  ({ ready }) => {
+    // const initialParses = [];
+    // const [count, setCount] = useState(0);
+    const [query, setQuery] = useState(`太郎はこの本を二郎を見た女性に渡した。
+すもももももももものうち。`);
+    const [nextParseId, setNextParseId] = useState(0);
+    const [parses, setParses] = useState([]);
+    console.log(parses);
+    function onSubmit(event) {
+      event.preventDefault();
+      const nodes = parse(query);
+      useEffect(() => {
+        setParses(parses.concat({
+          key: nextParseId,
+          parse: nodes,
+        }));
+        setNextParseId(nextParseId+1);
+      });
+    }
+
+    const renderParsedQuery = (item) => html`
+      <${Sentence} key=${item.key} nodes=${item.parse} ref=${monkeyPatchSetState} />
+    `;
+    return html`
+      <p>Preact stuff:</p>
+      <form onSubmit=${onSubmit}>
+        ${/* btw, we can't use React's onChange; Preact prefers browser-native onInput
+        https://github.com/developit/preact/issues/1034 */''}
+        <textarea class="input" value=${query} onInput=${event => setQuery(event.target.value)} />
+        <button class="submitter" disabled=${!ready}>Analyse Japanese<//>
+      <//>
+      <div class="richOutput columnReverse">
+        ${parses.map(renderParsedQuery)}
+      <//>
+    `;
+  });
 render(html`
   <${Provider} store=${store}>
     <${App} ref=${monkeyPatchSetState} />
