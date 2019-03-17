@@ -38,14 +38,14 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     <!-- <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div> -->
-    <form id="form">
+    <!-- <form id="form"> -->
         <!-- <input id="args" name="args" value="-o output.txt input.txt" placeholder="-o output.txt input.txt"> -->
-        <textarea id="input" class="input" name="input">
+        <!-- <textarea id="input" class="input" name="input">
 太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。
-</textarea>
-        <button id="submitter" class="submitter" type="submit" disabled>Analyse Japanese</button>
-    </form>
+</textarea> -->
+        <!-- <button id="submitter" class="submitter" type="submit" disabled>Analyse Japanese</button> -->
+    <!-- </form> -->
     <div id="managed"></div>
     <!-- <pre id="output"></pre> -->
     <div id="richOutput" class="richOutput">
@@ -64,14 +64,12 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     <script type="module">
       import ModuleConsumer from './mecab.js';
       import {
-        handleFormSubmitted,
         boundActions as actions,
       } from './src/index.js';
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
-      const submitterElement = document.getElementById('submitter');
       const wrapped = {};
       const toBeFreed = {
         mecab_model_t: new Set(), // config
@@ -82,11 +80,6 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         tagger: undefined,
         lattice: undefined,
       }
-
-      document.getElementById('form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        handleFormSubmitted();
-      });
 
       const dicdir = '/naist-jdic';
 
@@ -155,9 +148,6 @@ dicdir = ${dicdir}
 
           currentPointers.tagger = p_tagger;
           actions.setReady(true);
-
-          submitterElement.removeAttribute('disabled');
-          submitterElement.click();
         }],
         print: (function() {
           // var element = document.getElementById('output');

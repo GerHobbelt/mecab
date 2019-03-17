@@ -66,8 +66,9 @@ function handleTokenClickEdict2(event) {
 const store = createStore({
   ready: false,
   lols: 5,
-//   query: `太郎はこの本を二郎を見た女性に渡した。
-// すもももももももものうち。`,
+  initialParses: [],
+  initialQuery: `太郎はこの本を二郎を見た女性に渡した。
+すもももももももものうち。`,
   // parsedQueries: [],
 });
 
@@ -77,6 +78,9 @@ const actions = (store) => ({
   },
   setReady(state, ready) {
     return { ...state, ready, }
+  },
+  addInitialParse(state, parsedQuery) {
+    return { ...state, initialParses: [...state.initialParses, parsedQuery], }
   },
   // setQuery(state, query) {
   //   return { ...state, query, }
@@ -100,8 +104,18 @@ const boundActions = Object.assign({},
     })),
 );
 
-boundActions.increment();
-setInterval(boundActions.increment, 1000);
+// boundActions.increment();
+// setInterval(boundActions.increment, 1000);
+
+store.subscribe(state => {
+  if (state.ready && !state.initialParses.length && state.initialQuery) {
+    // console.log(state.initialQuery);
+    const parsed = parse(state.initialQuery);
+    // console.log(parsed);
+    // console.log(boundActions.addInitialParse);
+    boundActions.addInitialParse(parsed);
+  }
+})
 
 const monkeyPatchSetState = component => {
   if (!component) {
@@ -125,7 +139,7 @@ const Rubied = ({ theValue, reading }) => {
   <//>`
   };
 
-const Word = ({ subtokens }) => {
+const Word = ({ token, subtokens }) => {
   const reducedSubtokens = subtokens.reduce(({
     bufferedText,
     output,
@@ -157,7 +171,7 @@ const Word = ({ subtokens }) => {
     output = boundHtmlConcat(output, reducedSubtokens.bufferedText);
   }
 
-  return html`<span class="token4">${output}<//>`
+  return html`<span class="token4" token=${token}>${output}<//>`
   };
 
 /**
@@ -183,6 +197,8 @@ const boundHtmlConcat = htmlConcat.bind(null, html);
 // otherwise the whole list will undergo re-render when any item is added
 // https://stackoverflow.com/a/38726478/5257399
 const Sentence = ({ nodes }) => {
+  console.log('sentence render:');
+  console.log(nodes);
   const renderNode = (acc, node) => {
     if (node.isWhitespace) {
       return {
@@ -191,12 +207,27 @@ const Sentence = ({ nodes }) => {
     }
 
     return {
-      output: html`${acc.output}<${Word} subtokens=${node.subtokens} />`,
+      output: html`${acc.output}<${Word} token=${node.token} subtokens=${node.subtokens} />`,
     };
   };
 
+  function onClick(event) {
+    console.log(event);
+    const tokenNode = event.target.className === 'token3'
+    ? event.target
+    : event.target.closest('.token4');
+    console.log(tokenNode);
+    if (tokenNode) {
+      const token = tokenNode.getAttribute('token');
+      if (token) {
+        event.stopPropagation();
+        console.log(token);
+      }
+    }
+  }
+
   return html`
-  <div class="parsed-sentence">
+  <div class="parsed-sentence" onClick=${onClick}>
     ${nodes.reduce(renderNode, {
       output: '',
     }).output}
@@ -204,14 +235,36 @@ const Sentence = ({ nodes }) => {
   `
 };
 
-const App = connect('ready', actions)(
-  ({ ready }) => {
-    // const initialParses = [];
-    // const [count, setCount] = useState(0);
-    const [query, setQuery] = useState(`太郎はこの本を二郎を見た女性に渡した。
-すもももももももものうち。`);
-    const [nextParseId, setNextParseId] = useState(0);
+// const mapStateToItemProps = (_, initialProps) => (state/*, ownProps*/) => {
+//     return {
+//         item: state.items[initialProps.id],  // we're not relying on the second parameters "ownProps" here, so the wrapper component will not rerender
+//     }
+// }
+// const mapDispatchToItemProps = (dispatch, ownProps) => {
+//     return null;
+// }
+
+const App = connect('ready,initialParses', actions)(
+  ({ ready, initialParses }) => {
+    const keyedInitialParses = initialParses.reduce((acc, parse) => ({
+      parses: [...acc.parses, {
+        key: `from store: ${acc.nextKey}`,
+        // key: acc.nextKey,
+        parse,
+      }],
+      nextKey: acc.nextKey + 1,
+    }), {
+      parses: [],
+      nextKey: 0,
+    });
+
+    const initialQuery = `太郎はこの本を二郎を見た女性に渡した。
+すもももももももものうち。`;
+
+    const [query, setQuery] = useState(initialQuery);
     const [parses, setParses] = useState([]);
+    const [nextParseId, setNextParseId] = useState(0);
+
     function onSubmit(event) {
       event.preventDefault();
       const nodes = parse(query);
@@ -236,7 +289,7 @@ const App = connect('ready', actions)(
         <button class="submitter" disabled=${!ready}>Analyse Japanese<//>
       <//>
       <div class="richOutput columnReverse">
-        ${parses.map(renderParsedQuery)}
+        ${keyedInitialParses.parses.concat(parses).map(renderParsedQuery)}
       <//>
     `;
   });
