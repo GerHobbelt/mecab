@@ -118,15 +118,46 @@ const monkeyPatchSetState = component => {
   };
 };
 
-const Word = ({ children }) => {
-  return html`<span class="token4">${children}<//>`
-  };
-
 const Rubied = ({ theValue, reading }) => {
   return html`<ruby>
     <rb>${theValue}<//>
     <rt>${reading}<//>
   <//>`
+  };
+
+const Word = ({ subtokens }) => {
+  const reducedSubtokens = subtokens.reduce(({
+    bufferedText,
+    output,
+  }, subtoken) => {
+    if (subtoken.type === 'kanji') {
+      // we've hit an alphabet boundary, so flush buffer
+      if (bufferedText) {
+        output = boundHtmlConcat(output, bufferedText);
+        bufferedText = '';
+      }
+      output = html`${output}<${Rubied} theValue=${subtoken.value} reading=${subtoken.reading} />`;
+      return {
+        bufferedText,
+        output,
+      }
+    }
+    return {
+      bufferedText: bufferedText + subtoken.value,
+      output,
+    }
+  }, {
+    bufferedText: '',
+    output: '',
+  });
+
+  // flush buffer at word end, because it's a "word boundary"
+  let { bufferedText, output } = reducedSubtokens;
+  if (bufferedText) {
+    output = boundHtmlConcat(output, reducedSubtokens.bufferedText);
+  }
+
+  return html`<span class="token4">${output}<//>`
   };
 
 /**
@@ -148,61 +179,25 @@ function htmlConcat(html, left, right) {
 }
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
-// console.log(html`''`);
-
 // if we want this connected to the store, we'll need a workaround
 // otherwise the whole list will undergo re-render when any item is added
 // https://stackoverflow.com/a/38726478/5257399
 const Sentence = ({ nodes }) => {
-
   const renderNode = (acc, node) => {
     if (node.isWhitespace) {
       return {
-        bufferedText: acc.bufferedText,
         output: boundHtmlConcat(acc.output, node.token),
       };
     }
 
-    const reducedSubtokens = node.subtokens.reduce(({
-      bufferedText,
-      output,
-    }, subtoken) => {
-      if (subtoken.type === 'kanji') {
-        if (bufferedText) {
-          bufferedText = '';
-          output = boundHtmlConcat(output, bufferedText);
-        }
-        output = html`${output}<${Rubied} theValue=${subtoken.value} reading=${subtoken.reading} />`;
-        return {
-          bufferedText,
-          output,
-        }
-      }
-      return {
-        bufferedText: bufferedText + subtoken.value,
-        output,
-      }
-    }, {
-      bufferedText: acc.bufferedText,
-      output: '',
-    });
-
-    let { bufferedText, output } = reducedSubtokens;
-    if (bufferedText) {
-      output = boundHtmlConcat(output, reducedSubtokens.bufferedText),
-      bufferedText = '';
-    }
-
     return {
-      bufferedText,
-      output: html`${acc.output}<${Word} children=${output}><//>`,
+      output: html`${acc.output}<${Word} subtokens=${node.subtokens} />`,
     };
   };
 
   return html`
   <div class="parsed-sentence">
     ${nodes.reduce(renderNode, {
-      bufferedText: '',
       output: '',
     }).output}
   <//>
@@ -217,7 +212,6 @@ const App = connect('ready', actions)(
 すもももももももものうち。`);
     const [nextParseId, setNextParseId] = useState(0);
     const [parses, setParses] = useState([]);
-    console.log(parses);
     function onSubmit(event) {
       event.preventDefault();
       const nodes = parse(query);
