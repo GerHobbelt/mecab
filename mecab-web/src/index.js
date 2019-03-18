@@ -3,6 +3,7 @@ import { edictLookup } from './edict2/index.js';
 import { createElement, /*Component,*/ render } from '../web_modules/preact.js';
 import { useState, useEffect } from '../web_modules/preact--hooks.js';
 import { Provider, connect, createStore } from '../web_modules/unistore--full/preact.es.js';
+// import { Provider, useStore } from './preact-hooks';
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
 // Provider.prototype.render = function(props) {
@@ -21,6 +22,11 @@ const enamdict = fetch('enamdict.utf8.txt')
   document.getElementById('enamdict-loading').classList.add('hidden');
   return response.text();
 });
+
+const dictionariesPromise = Promise.all([
+  edict2,
+  enamdict
+  ]);
 
 const outputElement = document.getElementById('output');
 const definitionElement = document.getElementById('definition');
@@ -53,11 +59,7 @@ function handleTokenClickEdict2(event) {
     queryContainerElement.style.order = +sentenceNode.style.order+1;
     queryContainerElement.style.display = 'initial';
     definitionElement.classList.remove('hidden');
-    Promise.all([
-      edict2,
-      enamdict]
-      )
-    .then((dictionaries) => {
+    dictionariesPromise.then((dictionaries) => {
       const results = edictLookup(dictionaries, tokenNode._mecabToken);
     });
   }
@@ -181,22 +183,20 @@ const boundHtmlConcat = htmlConcat.bind(null, html);
 const Definition = ({ chosenTerm }) => {
   const [results, setResults] = useState(undefined);
 
-  useEffect(() => {
+  useEffect(async () => {
     if (!results) {
-      Promise.all([
-        edict2,
-        enamdict])
-      .then((dictionaries) => {
-        const results = edictLookup(dictionaries, chosenTerm);
-        console.log(results);
-        setResults(results);
-      });
+      const dictionaries = await dictionariesPromise;
+      const results = edictLookup(dictionaries, chosenTerm);
+      console.log('setting results:');
+      console.log(results);
+      setResults(results);
     }
   });
   if (!results) {
     return '';
   }
-  // console.log(results);
+  console.log('rendering results:');
+  console.log(results);
   const renderEdictResult = (result) => {
     return html`
     <pre>${JSON.stringify(result)}</pre>
@@ -211,7 +211,9 @@ const Definition = ({ chosenTerm }) => {
 
   return html`
   <div>
+    <h3>EDICT2<//>
     ${results.edict2.map(renderEdictResult)}
+    <h3>ENAMDICT<//>
     ${results.enamdict.map(renderEnamdictResult)}
   </div>
   `;
@@ -242,12 +244,12 @@ const Sentence = ({ nodes }) => {
     const tokenNode = event.target.className === 'token4'
     ? event.target
     : event.target.closest('.token4');
-    console.log(tokenNode);
+    // console.log(tokenNode);
     if (tokenNode) {
       const token = tokenNode.getAttribute('data-token');
       if (token) {
         event.stopPropagation();
-        console.log(token);
+        // console.log(token);
         useEffect(() => {
           setChosenTerm(token);
         });
@@ -280,8 +282,10 @@ const Sentence = ({ nodes }) => {
 //     return null;
 // }
 
-const App = connect('ready,initialParses', actions)(
-  ({ ready, initialParses }) => {
+const App = /* connect('ready,initialParses', actions)(*/
+  ({ /* ready, initialParses */ }) => {
+    const ready = true;
+    const initialParses = [];
     const keyedInitialParses = initialParses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         key: `from store: ${acc.nextKey}`,
@@ -328,11 +332,14 @@ const App = connect('ready,initialParses', actions)(
         ${keyedInitialParses.parses.concat(parses).map(renderParsedQuery)}
       <//>
     `;
-  });
+  }/*)*/;
+// render(html`
+//   <${Provider} store=${store}>
+//     <${App} />
+//   <//>
+//   `, document.getElementById('managed'));
 render(html`
-  <${Provider} store=${store}>
-    <${App} />
-  <//>
+  <${App} />
   `, document.getElementById('managed'));
 
 function createAnalysisFragment(nodes) {
