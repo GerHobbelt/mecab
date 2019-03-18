@@ -9,7 +9,7 @@
   "dependencies": {
     "htm": "^2.1.1",
     "preact": "^10.0.0-alpha.2",
-    "unistore": "^3.2.1",
+    "unistore": "^3.4.1",
     "wanakana": "^4.0.2"
   },
   "devDependencies": {

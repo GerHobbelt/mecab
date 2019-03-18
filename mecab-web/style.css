@@ -127,12 +127,15 @@ textarea {
   flex-direction: column;
 }
 
-.richOutput > div.parsed-sentence {
-  margin-bottom: 1.5em;
+.richOutput .parsed-sentence {
   white-space: pre-wrap;
   word-spacing: 0.15em;
   font-size: 18px;
   font-weight: 600;
+}
+
+.output-row {
+  margin-bottom: 1.5em;
 }
 
 .richOutput > div.parsed-sentence > span.token {

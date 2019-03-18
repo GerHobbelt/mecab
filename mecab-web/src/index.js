@@ -5,9 +5,9 @@ import { useState, useEffect } from '../web_modules/preact--hooks.js';
 import { Provider, connect, createStore } from '../web_modules/unistore--full/preact.es.js';
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
-Provider.prototype.render = function(props) {
-  return props.children;
-};
+// Provider.prototype.render = function(props) {
+//   return props.children;
+// };
 
 // const td = new TextDecoder('utf-16le');
 // .then((response)=>response.arrayBuffer())
@@ -115,22 +115,7 @@ store.subscribe(state => {
     // console.log(boundActions.addInitialParse);
     boundActions.addInitialParse(parsed);
   }
-})
-
-const monkeyPatchSetState = component => {
-  if (!component) {
-    return component;
-  }
-  // console.log(component);
-  // component.setState = component.forceUpdate;
-  const origSetState = component.setState;
-  component.setState = function(state, props) {
-    if (state == null) {
-      state = {}
-    };
-    return origSetState.call(this, state, props);
-  };
-};
+});
 
 const Rubied = ({ theValue, reading }) => {
   return html`<ruby>
@@ -171,7 +156,7 @@ const Word = ({ token, subtokens }) => {
     output = boundHtmlConcat(output, reducedSubtokens.bufferedText);
   }
 
-  return html`<span class="token4" token=${token}>${output}<//>`
+  return html`<span class="token4" data-token=${token}>${output}<//>`
   };
 
 /**
@@ -193,12 +178,53 @@ function htmlConcat(html, left, right) {
 }
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
+const Definition = ({ chosenTerm }) => {
+  const [results, setResults] = useState(undefined);
+
+  useEffect(() => {
+    if (!results) {
+      Promise.all([
+        edict2,
+        enamdict])
+      .then((dictionaries) => {
+        const results = edictLookup(dictionaries, chosenTerm);
+        console.log(results);
+        setResults(results);
+      });
+    }
+  });
+  if (!results) {
+    return '';
+  }
+  // console.log(results);
+  const renderEdictResult = (result) => {
+    return html`
+    <pre>${JSON.stringify(result)}</pre>
+    `;
+  };
+  // { headwords, meaning, readings}
+  const renderEnamdictResult = (result) => {
+    return html`
+    <pre>${JSON.stringify(result)}</pre>
+    `;
+  };
+
+  return html`
+  <div>
+    ${results.edict2.map(renderEdictResult)}
+    ${results.enamdict.map(renderEnamdictResult)}
+  </div>
+  `;
+};
+
 // if we want this connected to the store, we'll need a workaround
 // otherwise the whole list will undergo re-render when any item is added
 // https://stackoverflow.com/a/38726478/5257399
 const Sentence = ({ nodes }) => {
-  console.log('sentence render:');
-  console.log(nodes);
+  // console.log('sentence render:');
+  // console.log(nodes);
+  const [chosenTerm, setChosenTerm] = useState(undefined);
+
   const renderNode = (acc, node) => {
     if (node.isWhitespace) {
       return {
@@ -212,25 +238,35 @@ const Sentence = ({ nodes }) => {
   };
 
   function onClick(event) {
-    console.log(event);
-    const tokenNode = event.target.className === 'token3'
+    // console.log(event);
+    const tokenNode = event.target.className === 'token4'
     ? event.target
     : event.target.closest('.token4');
     console.log(tokenNode);
     if (tokenNode) {
-      const token = tokenNode.getAttribute('token');
+      const token = tokenNode.getAttribute('data-token');
       if (token) {
         event.stopPropagation();
         console.log(token);
+        useEffect(() => {
+          setChosenTerm(token);
+        });
       }
     }
   }
 
   return html`
-  <div class="parsed-sentence" onClick=${onClick}>
-    ${nodes.reduce(renderNode, {
-      output: '',
-    }).output}
+  <div class="output-row">
+    <div class="parsed-sentence" onClick=${onClick}>
+      ${nodes.reduce(renderNode, {
+        output: '',
+      }).output}
+    <//>
+    ${chosenTerm
+      ? html`
+      <${Definition} chosenTerm=${chosenTerm} />
+      `
+      : ''}
   <//>
   `
 };
@@ -278,7 +314,7 @@ const App = connect('ready,initialParses', actions)(
     }
 
     const renderParsedQuery = (item) => html`
-      <${Sentence} key=${item.key} nodes=${item.parse} ref=${monkeyPatchSetState} />
+      <${Sentence} key=${item.key} nodes=${item.parse} />
     `;
     return html`
       <p>Preact stuff:</p>
@@ -295,7 +331,7 @@ const App = connect('ready,initialParses', actions)(
   });
 render(html`
   <${Provider} store=${store}>
-    <${App} ref=${monkeyPatchSetState} />
+    <${App} />
   <//>
   `, document.getElementById('managed'));
 
