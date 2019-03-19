@@ -1,10 +1,16 @@
 import { toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
 import { edictLookup } from './edict2/index.js';
+
 import { createElement, /*Component,*/ render } from '../web_modules/preact.js';
 import { useState, useEffect } from '../web_modules/preact--hooks.js';
+
 import { Provider, connect, createStore } from '../web_modules/unistore--full/preact.es.js';
-// import { Provider, useStore } from './preact-hooks';
+
 import htm from '../web_modules/htm.js';
+
+// const { createElement, render, useState, useEffect } = React;
+// console.log(React);
+
 const html = htm.bind(createElement);
 // Provider.prototype.render = function(props) {
 //   return props.children;
@@ -181,22 +187,26 @@ function htmlConcat(html, left, right) {
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
 const Definition = ({ chosenTerm }) => {
-  const [results, setResults] = useState(undefined);
+  const [results, setResults] = useState({
+    key: chosenTerm,
+    value: undefined,
+  });
 
-  useEffect(async () => {
-    if (!results) {
+  if (!results.value || results.key !== chosenTerm) {
+    useEffect(async () => {
       const dictionaries = await dictionariesPromise;
       const results = edictLookup(dictionaries, chosenTerm);
-      console.log('setting results:');
-      console.log(results);
-      setResults(results);
-    }
-  });
-  if (!results) {
+      // console.log('setting results:');
+      // console.log(results);
+      setResults({
+        key: chosenTerm,
+        value: results,
+      });
+    });
     return '';
   }
-  console.log('rendering results:');
-  console.log(results);
+  // console.log('rendering results:');
+  // console.log(results.value);
   const renderEdictResult = (result) => {
     return html`
     <pre>${JSON.stringify(result)}</pre>
@@ -212,9 +222,9 @@ const Definition = ({ chosenTerm }) => {
   return html`
   <div>
     <h3>EDICT2<//>
-    ${results.edict2.map(renderEdictResult)}
+    ${results.value.edict2.map(renderEdictResult)}
     <h3>ENAMDICT<//>
-    ${results.enamdict.map(renderEnamdictResult)}
+    ${results.value.enamdict.map(renderEnamdictResult)}
   </div>
   `;
 };
@@ -282,10 +292,8 @@ const Sentence = ({ nodes }) => {
 //     return null;
 // }
 
-const App = /* connect('ready,initialParses', actions)(*/
-  ({ /* ready, initialParses */ }) => {
-    const ready = true;
-    const initialParses = [];
+const App = connect('ready,initialParses', actions)(
+  ({ ready, initialParses }) => {
     const keyedInitialParses = initialParses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         key: `from store: ${acc.nextKey}`,
@@ -332,15 +340,15 @@ const App = /* connect('ready,initialParses', actions)(*/
         ${keyedInitialParses.parses.concat(parses).map(renderParsedQuery)}
       <//>
     `;
-  }/*)*/;
-// render(html`
-//   <${Provider} store=${store}>
-//     <${App} />
-//   <//>
-//   `, document.getElementById('managed'));
+  });
 render(html`
-  <${App} />
+  <${Provider} store=${store}>
+    <${App} />
+  <//>
   `, document.getElementById('managed'));
+// render(html`
+//   <${App} />
+//   `, document.getElementById('managed'));
 
 function createAnalysisFragment(nodes) {
   const fragment = document.createDocumentFragment();
