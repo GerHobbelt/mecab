@@ -64,8 +64,11 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     <script type="module">
       import ModuleConsumer from './mecab.js';
       import {
+        renderApplication,
         boundActions as actions,
       } from './src/index.js';
+
+      renderApplication(document.getElementById('managed'));
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');

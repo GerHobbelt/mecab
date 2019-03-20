@@ -1,23 +1,14 @@
 import { toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
 import { edictLookup } from './edict2/index.js';
 
-import { createElement, /*Component,*/ render } from '../web_modules/preact.js';
-import { useState, useEffect } from '../web_modules/preact--hooks.js';
+import { createElement, render } from '../web_modules/preact.js';
+import { useState, useEffect } from '../web_modules/preact/hooks.js';
 
-import { Provider, connect, createStore } from '../web_modules/unistore--full/preact.es.js';
+import { Provider, connect, createStore } from '../web_modules/unistore/full/preact.es.js';
 
 import htm from '../web_modules/htm.js';
-
-// const { createElement, render, useState, useEffect } = React;
-// console.log(React);
-
 const html = htm.bind(createElement);
-// Provider.prototype.render = function(props) {
-//   return props.children;
-// };
 
-// const td = new TextDecoder('utf-16le');
-// .then((response)=>response.arrayBuffer())
 const edict2 = fetch('edict2.utf8.txt')
 .then((response)=> {
   document.getElementById('edict2-loading').classList.add('hidden');
@@ -34,68 +25,18 @@ const dictionariesPromise = Promise.all([
   enamdict
   ]);
 
-const outputElement = document.getElementById('output');
-const definitionElement = document.getElementById('definition');
-const definitionTokenElement = document.getElementById('definition-token');
-const queryContainerElement = document.getElementById('queryContainer');
-const iframeContainerElement = document.getElementById('iframeContainer');
-const currentQueryElement = document.getElementById('current-query');
-const currentQueryTargetElement = document.getElementById('current-query-target');
-let iframeElement;
-
-function handleTokenClickEdict2(event) {
-  const tokenNode = event.target.className === 'token3'
-  ? event.target
-  : event.target.closest('.token3');
-  if (tokenNode
-    && tokenNode._mecabToken) {
-    console.log(tokenNode._mecabToken);
-    const sentenceNode = tokenNode.closest('.parsed-sentence');
-    if (!sentenceNode) {
-      throw new Error('DOM not as expected');
-    }
-    +sentenceNode.style.order;
-    Array.from(richOutputElement.children)
-    .filter((element) => element.style.order > +sentenceNode.style.order)
-    .sort((left, right) => right.style.order - left.style.order) // descending
-    .forEach((child) => {
-      child.style.order = +child.style.order+1;
-    });
-    definitionTokenElement.textContent = tokenNode._mecabToken;
-    queryContainerElement.style.order = +sentenceNode.style.order+1;
-    queryContainerElement.style.display = 'initial';
-    definitionElement.classList.remove('hidden');
-    dictionariesPromise.then((dictionaries) => {
-      const results = edictLookup(dictionaries, tokenNode._mecabToken);
-    });
-  }
-}
-
 const store = createStore({
   ready: false,
-  lols: 5,
   initialParses: [],
-  initialQuery: `太郎はこの本を二郎を見た女性に渡した。
-すもももももももものうち。`,
-  // parsedQueries: [],
 });
 
 const actions = (store) => ({
-  increment(state) {
-    return { ...state, lols: state.lols+1 }
-  },
   setReady(state, ready) {
     return { ...state, ready, }
   },
   addInitialParse(state, parsedQuery) {
     return { ...state, initialParses: [...state.initialParses, parsedQuery], }
   },
-  // setQuery(state, query) {
-  //   return { ...state, query, }
-  // },
-  // addParsedQuery(state, parsedQuery) {
-  //   return { ...state, parsedQueries: [parsedQuery, ...state.parsedQueries], }
-  // },
 });
 
 function act(store, actionsObj, action, ...args) {
@@ -112,9 +53,6 @@ const boundActions = Object.assign({},
     })),
 );
 
-// boundActions.increment();
-// setInterval(boundActions.increment, 1000);
-
 store.subscribe(state => {
   if (state.ready && !state.initialParses.length && state.initialQuery) {
     // console.log(state.initialQuery);
@@ -126,10 +64,12 @@ store.subscribe(state => {
 });
 
 const Rubied = ({ theValue, reading }) => {
-  return html`<ruby>
+  return html`
+  <ruby>
     <rb>${theValue}<//>
     <rt>${reading}<//>
-  <//>`
+  <//>
+  `
   };
 
 const Word = ({ token, subtokens }) => {
@@ -143,7 +83,9 @@ const Word = ({ token, subtokens }) => {
         output = boundHtmlConcat(output, bufferedText);
         bufferedText = '';
       }
-      output = html`${output}<${Rubied} theValue=${subtoken.value} reading=${subtoken.reading} />`;
+      output = html`
+      ${output}<${Rubied} theValue=${subtoken.value} reading=${subtoken.reading} />
+      `;
       return {
         bufferedText,
         output,
@@ -164,7 +106,9 @@ const Word = ({ token, subtokens }) => {
     output = boundHtmlConcat(output, reducedSubtokens.bufferedText);
   }
 
-  return html`<span class="token4" data-token=${token}>${output}<//>`
+  return html`
+  <span class="token4" data-token=${token}>${output}<//>
+  `
   };
 
 /**
@@ -283,15 +227,6 @@ const Sentence = ({ nodes }) => {
   `
 };
 
-// const mapStateToItemProps = (_, initialProps) => (state/*, ownProps*/) => {
-//     return {
-//         item: state.items[initialProps.id],  // we're not relying on the second parameters "ownProps" here, so the wrapper component will not rerender
-//     }
-// }
-// const mapDispatchToItemProps = (dispatch, ownProps) => {
-//     return null;
-// }
-
 const App = connect('ready,initialParses', actions)(
   ({ ready, initialParses }) => {
     const keyedInitialParses = initialParses.reduce((acc, parse) => ({
@@ -341,134 +276,13 @@ const App = connect('ready,initialParses', actions)(
       <//>
     `;
   });
-render(html`
+function renderApplication(element) {
+  return render(html`
   <${Provider} store=${store}>
     <${App} />
   <//>
-  `, document.getElementById('managed'));
-// render(html`
-//   <${App} />
-//   `, document.getElementById('managed'));
-
-function createAnalysisFragment(nodes) {
-  const fragment = document.createDocumentFragment();
-  const div = document.createElement('div');
-  div.className = 'parsed-sentence';
-  div.style.order = 1;
-  let isFirstNode = true;
-  let bufferedText = '';
-  for (const node of nodes) {
-    if (node.isWhitespace) {
-      div.insertAdjacentText('beforeend', node.token);
-      continue;
-    }
-    let span;
-    if (new URLSearchParams(window.location.search).get('jisho')) {
-      span = document.createElement('span');
-      span.className = 'token';
-    } else if (new URLSearchParams(window.location.search).get('jisho_href')) {
-      span = document.createElement('a');
-      span.className = 'token2';
-      span.href = `https://jisho.org/search/${encodeURIComponent(node.token)}`;
-      span.target = '_blank';
-    } else {
-      span = document.createElement('span');
-      span.className = 'token3';
-    }
-    span._mecabToken = node.token;
-    let isFirstSubtoken = true;
-    for (const subtoken of node.subtokens) {
-      if (subtoken.type === 'kanji') {
-        if (bufferedText) {
-          span.insertAdjacentText('beforeend', bufferedText);
-          bufferedText = '';
-        }
-        const ruby = document.createElement('ruby');
-        const rb = document.createElement('rb');
-        const rt = document.createElement('rt');
-
-        rb.textContent = subtoken.value;
-        rt.textContent = subtoken.reading;
-        ruby.appendChild(rb);
-        ruby.appendChild(rt);
-        span.appendChild(ruby);
-      } else {
-        bufferedText += subtoken.value;
-      }
-      isFirstSubtoken = false;
-    }
-    if (bufferedText) {
-      span.insertAdjacentText('beforeend', bufferedText);
-      bufferedText = '';
-    }
-    div.appendChild(span);
-    isFirstNode = false;
-  }
-  // if (bufferedText) {
-  //   div.insertAdjacentText('beforeend', bufferedText);
-  // }
-  fragment.appendChild(div);
-  return fragment;
+  `, element);
 }
-
-function handleTokenClickJishoIframe(event) {
-  const tokenNode = event.target.className === 'token'
-  ? event.target
-  : event.target.closest('.token');
-  if (tokenNode
-    && tokenNode._mecabToken) {
-    console.log(tokenNode._mecabToken);
-    const sentenceNode = tokenNode.closest('.parsed-sentence');
-    if (!sentenceNode) {
-      throw new Error('DOM not as expected');
-    }
-    +sentenceNode.style.order;
-    Array.from(richOutputElement.children)
-    .filter((element) => element.style.order > +sentenceNode.style.order)
-    .sort((left, right) => right.style.order - left.style.order) // descending
-    .forEach((child) => {
-      child.style.order = +child.style.order+1;
-    });
-    if (!iframeElement) {
-      iframeElement = document.createElement('iframe');
-      iframeContainerElement.classList.remove('hidden');
-      iframeContainerElement.appendChild(iframeElement);
-    }
-    currentQueryElement.classList.remove('hidden');
-    currentQueryTargetElement.textContent = tokenNode._mecabToken;
-    queryContainerElement.style.order = +sentenceNode.style.order+1;
-    queryContainerElement.style.display = 'initial';
-    iframeElement.src = `https://jisho.org/search/${encodeURIComponent(tokenNode._mecabToken)}`;
-  }
-}
-
-const richOutputElement = document.getElementById('richOutput');
-
-function handleFormSubmitted() {
-	const input = document.getElementById('input').value;
-  const nodes = parse(input);
-  // const pretty = nodes.map((node) => node.token).join('\n');
-  // outputElement.insertAdjacentText('beforeend', `${pretty}\n`);
-  // outputElement.scrollTop = outputElement.scrollHeight;
-
-  Array.from(richOutputElement.children)
-  .sort((left, right) => right.style.order - left.style.order) // descending
-  .forEach((child) => {
-    child.style.order = +child.style.order+1;
-  });
-
-  const fragment = createAnalysisFragment(nodes);
-  richOutputElement.prepend(fragment);
-}
-
-richOutputElement.addEventListener('click', function(event) {
-  event.stopPropagation();
-  if (new URLSearchParams(window.location.search).get('jisho')) {
-    handleTokenClickJishoIframe(event);
-  } else {
-    handleTokenClickEdict2(event);
-  }
-});
 
 function parse(sentence) {
   const whitespaces = [];
@@ -490,7 +304,6 @@ function parse(sentence) {
 }
 
 export {
-	handleFormSubmitted,
-	handleTokenClickEdict2,
+  renderApplication,
   boundActions,
 };

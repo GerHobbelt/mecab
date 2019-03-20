@@ -14,7 +14,7 @@
     "wanakana": "^4.0.2"
   },
   "devDependencies": {
-    "@pika/web": "^0.2.0"
+    "@pika/web": "^0.4.0"
   },
   "@pika/web": {
     "webDependencies": [
