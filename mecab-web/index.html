@@ -64,24 +64,46 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     <script type="module">
       import ModuleConsumer from './mecab.js';
       import {
-        renderApplication,
+        initStore,
         initApplication,
-        boundActions as actions,
       } from './src/index.js';
 
-      renderApplication(document.getElementById('managed'));
+      const [store, actions] = initStore();
+
       initApplication({
         dictionaryTextPromises: {
           edict2: fetch('edict2.utf8.txt')
-          .then(response => response.text()),
+          .then(response => {
+            edict2LoadingElement.classList.add('hidden');
+            return response.text();
+          }),
           enamdict: fetch('enamdict.utf8.txt')
-          .then(response => response.text()),
+          .then(response => {
+            enamdictLoadingElement.classList.add('hidden');
+            return response.text();
+          }),
+        },
+        store,
+        actions,
+        element: document.getElementById('managed'),
+      });
+
+      store.subscribe(state => {
+        if (state.ready
+          && !state.initialParses.length
+          && state.initialQuery) {
+          // console.log(state.initialQuery);
+          const parsed = state.parse(state.initialQuery);
+          // console.log(parsed);
+          actions.addInitialParse(parsed);
         }
-      })
+      });
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
+      const edict2LoadingElement = document.getElementById('edict2-loading');
+      const enamdictLoadingElement = document.getElementById('enamdict-loading');
       const wrapped = {};
       const toBeFreed = {
         mecab_model_t: new Set(), // config
@@ -238,10 +260,6 @@ dicdir = ${dicdir}
         };
       };
 
-      Object.assign(window, {
-        wrapped,
-        currentPointers,
-      });
       ModuleConsumer(Module);
     </script>
     <footer></footer>

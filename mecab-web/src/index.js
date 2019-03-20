@@ -9,23 +9,27 @@ import { Provider, connect, createStore } from '../web_modules/unistore/full/pre
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
 
-const store = createStore({
-  ready: false,
-  mecabCallbacks: {},
-  mecabStructures: {},
-  parse: undefined,
-  dictionaryLoading: {
-    edict2: false,
-    enamdict: false,
-  },
-  dictionaryText: {
-    edict2: '',
-    enamdict: '',
-  },
-  initialQuery: `太郎はこの本を二郎を見た女性に渡した。
+function initStore() {
+  const store = createStore({
+    ready: false,
+    mecabCallbacks: {},
+    mecabStructures: {},
+    parse: undefined,
+    dictionaryLoading: {
+      edict2: false,
+      enamdict: false,
+    },
+    dictionaryText: {
+      edict2: '',
+      enamdict: '',
+    },
+    initialQuery: `太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。`,
-  initialParses: [],
-});
+    initialParses: [],
+  });
+  const boundActions = getBoundActions(store);
+  return [store, boundActions];
+}
 
 const actions = (store) => ({
   setReady(state, ready) {
@@ -75,25 +79,16 @@ function act(store, actionsObj, action, ...args) {
       store.getState(),
       ...args));
 }
-const actor = act.bind(null, store, actions(store));
-const boundActions = Object.assign({}, 
-  ...Object.keys(actions(store))
-    .map(action => ({
-      [action]: actor.bind(null, action),
-    })),
-);
 
-store.subscribe(state => {
-  if (state.ready
-    && !state.initialParses.length
-    && state.initialQuery) {
-    // console.log(state.initialQuery);
-    const parsed = state.parse(state.initialQuery);
-    // console.log(parsed);
-    // console.log(boundActions.addInitialParse);
-    boundActions.addInitialParse(parsed);
-  }
-});
+function getBoundActions(store) {
+  const actor = act.bind(null, store, actions(store));
+  return Object.assign({}, 
+    ...Object.keys(actions(store))
+      .map(action => ({
+        [action]: actor.bind(null, action),
+      })),
+  )
+}
 
 const Rubied = ({ theValue, reading }) => {
   return html`
@@ -263,8 +258,8 @@ const Sentence = ({ nodes }) => {
   `
 };
 
-const App = connect('ready,initialParses,initialQuery,dictionaryLoading,parse', actions)(
-  ({ ready, initialParses, initialQuery, dictionaryLoading, parse, }) => {
+const App = connect('ready,initialParses,initialQuery,parse', actions)(
+  ({ ready, initialParses, initialQuery, parse, }) => {
     const keyedInitialParses = initialParses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         key: `from store: ${acc.nextKey}`,
@@ -297,12 +292,6 @@ const App = connect('ready,initialParses,initialQuery,dictionaryLoading,parse', 
       <${Sentence} key=${item.key} nodes=${item.parse} />
     `;
     return html`
-      ${dictionaryLoading.edict2
-        ? html`<div>Downloading embedded dictionary (EDICT2)...</div>`
-        : ''}
-      ${dictionaryLoading.enamdict
-        ? html`<div>Downloading embedded dictionary (ENAMDICT)...</div>`
-        : ''}
       <form onSubmit=${onSubmit}>
         ${/* btw, we can't use React's onChange; Preact prefers browser-native onInput
         https://github.com/developit/preact/issues/1034 */''}
@@ -314,7 +303,8 @@ const App = connect('ready,initialParses,initialQuery,dictionaryLoading,parse', 
       <//>
     `;
   });
-function renderApplication(element) {
+
+function renderApplication(store, element) {
   return render(html`
   <${Provider} store=${store}>
     <${App} />
@@ -347,19 +337,22 @@ function bindParser(mecabCallbacks, mecabStructures) {
 
 function initApplication({
   dictionaryTextPromises,
+  store,
+  actions,
+  element,
 }) {
-  boundActions.setDictionaryLoading('edict2', true);
-  boundActions.setDictionaryLoading('enamdict', true);
+  actions.setDictionaryLoading('edict2', true);
+  actions.setDictionaryLoading('enamdict', true);
   dictionaryTextPromises.edict2.then((text) => {
-    boundActions.dictionaryLoaded('edict2', text);
+    actions.dictionaryLoaded('edict2', text);
   });
   dictionaryTextPromises.enamdict.then((text) => {
-    boundActions.dictionaryLoaded('enamdict', text);
+    actions.dictionaryLoaded('enamdict', text);
   });
+  renderApplication(store, element);
 }
 
 export {
-  renderApplication,
+  initStore,
   initApplication,
-  boundActions,
 };
