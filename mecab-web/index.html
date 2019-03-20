@@ -65,10 +65,19 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       import ModuleConsumer from './mecab.js';
       import {
         renderApplication,
+        initApplication,
         boundActions as actions,
       } from './src/index.js';
 
       renderApplication(document.getElementById('managed'));
+      initApplication({
+        dictionaryTextPromises: {
+          edict2: fetch('edict2.utf8.txt')
+          .then(response => response.text()),
+          enamdict: fetch('enamdict.utf8.txt')
+          .then(response => response.text()),
+        }
+      })
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
@@ -150,7 +159,7 @@ dicdir = ${dicdir}
           toBeFreed.mecab_t.add(p_tagger);
 
           currentPointers.tagger = p_tagger;
-          actions.setReady(true);
+          actions.setupMecab(wrapped, currentPointers);
         }],
         print: (function() {
           // var element = document.getElementById('output');

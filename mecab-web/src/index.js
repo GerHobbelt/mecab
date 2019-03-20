@@ -9,33 +9,63 @@ import { Provider, connect, createStore } from '../web_modules/unistore/full/pre
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
 
-const edict2 = fetch('edict2.utf8.txt')
-.then((response)=> {
-  document.getElementById('edict2-loading').classList.add('hidden');
-  return response.text();
-});
-const enamdict = fetch('enamdict.utf8.txt')
-.then((response)=> {
-  document.getElementById('enamdict-loading').classList.add('hidden');
-  return response.text();
-});
-
-const dictionariesPromise = Promise.all([
-  edict2,
-  enamdict
-  ]);
-
 const store = createStore({
   ready: false,
+  mecabCallbacks: {},
+  mecabStructures: {},
+  parse: undefined,
+  dictionaryLoading: {
+    edict2: false,
+    enamdict: false,
+  },
+  dictionaryText: {
+    edict2: '',
+    enamdict: '',
+  },
+  initialQuery: `太郎はこの本を二郎を見た女性に渡した。
+すもももももももものうち。`,
   initialParses: [],
 });
 
 const actions = (store) => ({
   setReady(state, ready) {
-    return { ...state, ready, }
+    return { ...state, ready, };
   },
   addInitialParse(state, parsedQuery) {
-    return { ...state, initialParses: [...state.initialParses, parsedQuery], }
+    return { ...state, initialParses: [...state.initialParses, parsedQuery], };
+  },
+  setupMecab(state, mecabCallbacks, mecabStructures) {
+    return {
+      ...state,
+      mecabCallbacks,
+      mecabStructures,
+      parse: bindParser(
+        mecabCallbacks,
+        mecabStructures),
+      ready: true,
+    }
+  },
+  setDictionaryLoading(state, dict, bool) {
+    return {
+      ...state,
+      dictionaryLoading: {
+        ...state.dictionaryLoading,
+        [dict]: bool,
+      }
+    };
+  },
+  dictionaryLoaded(state, dict, text) {
+    return {
+      ...state,
+      dictionaryLoading: {
+        ...state.dictionaryLoading,
+        [dict]: false,
+      },
+      dictionaryText: {
+        ...state.dictionaryText,
+        [dict]: text,
+      },
+    };
   },
 });
 
@@ -54,9 +84,11 @@ const boundActions = Object.assign({},
 );
 
 store.subscribe(state => {
-  if (state.ready && !state.initialParses.length && state.initialQuery) {
+  if (state.ready
+    && !state.initialParses.length
+    && state.initialQuery) {
     // console.log(state.initialQuery);
-    const parsed = parse(state.initialQuery);
+    const parsed = state.parse(state.initialQuery);
     // console.log(parsed);
     // console.log(boundActions.addInitialParse);
     boundActions.addInitialParse(parsed);
@@ -130,48 +162,52 @@ function htmlConcat(html, left, right) {
 }
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
-const Definition = ({ chosenTerm }) => {
-  const [results, setResults] = useState({
-    key: chosenTerm,
-    value: undefined,
-  });
-
-  if (!results.value || results.key !== chosenTerm) {
-    useEffect(async () => {
-      const dictionaries = await dictionariesPromise;
-      const results = edictLookup(dictionaries, chosenTerm);
-      // console.log('setting results:');
-      // console.log(results);
-      setResults({
-        key: chosenTerm,
-        value: results,
-      });
+const Definition = connect('dictionaryText', actions)(
+  ({ chosenTerm, dictionaryText }) => {
+    const {edict2, enamdict} = dictionaryText;
+    const [results, setResults] = useState({
+      key: chosenTerm,
+      value: undefined,
     });
-    return '';
-  }
-  // console.log('rendering results:');
-  // console.log(results.value);
-  const renderEdictResult = (result) => {
-    return html`
-    <pre>${JSON.stringify(result)}</pre>
-    `;
-  };
-  // { headwords, meaning, readings}
-  const renderEnamdictResult = (result) => {
-    return html`
-    <pre>${JSON.stringify(result)}</pre>
-    `;
-  };
 
-  return html`
-  <div>
-    <h3>EDICT2<//>
-    ${results.value.edict2.map(renderEdictResult)}
-    <h3>ENAMDICT<//>
-    ${results.value.enamdict.map(renderEnamdictResult)}
-  </div>
-  `;
-};
+    if (!edict2 || !enamdict) {
+      return '';
+    }
+    if (!results.value || results.key !== chosenTerm) {
+      useEffect(() => {
+        const results = edictLookup([edict2, enamdict], chosenTerm);
+        // console.log('setting results:');
+        // console.log(results);
+        setResults({
+          key: chosenTerm,
+          value: results,
+        });
+      });
+      return '';
+    }
+    // console.log('rendering results:');
+    // console.log(results.value);
+    const renderEdictResult = (result) => {
+      return html`
+      <pre>${JSON.stringify(result)}</pre>
+      `;
+    };
+    // { headwords, meaning, readings}
+    const renderEnamdictResult = (result) => {
+      return html`
+      <pre>${JSON.stringify(result)}</pre>
+      `;
+    };
+
+    return html`
+    <div>
+      <h3>EDICT2<//>
+      ${results.value.edict2.map(renderEdictResult)}
+      <h3>ENAMDICT<//>
+      ${results.value.enamdict.map(renderEnamdictResult)}
+    </div>
+    `;
+  });
 
 // if we want this connected to the store, we'll need a workaround
 // otherwise the whole list will undergo re-render when any item is added
@@ -227,8 +263,8 @@ const Sentence = ({ nodes }) => {
   `
 };
 
-const App = connect('ready,initialParses', actions)(
-  ({ ready, initialParses }) => {
+const App = connect('ready,initialParses,initialQuery,dictionaryLoading,parse', actions)(
+  ({ ready, initialParses, initialQuery, dictionaryLoading, parse, }) => {
     const keyedInitialParses = initialParses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         key: `from store: ${acc.nextKey}`,
@@ -240,9 +276,6 @@ const App = connect('ready,initialParses', actions)(
       parses: [],
       nextKey: 0,
     });
-
-    const initialQuery = `太郎はこの本を二郎を見た女性に渡した。
-すもももももももものうち。`;
 
     const [query, setQuery] = useState(initialQuery);
     const [parses, setParses] = useState([]);
@@ -264,7 +297,12 @@ const App = connect('ready,initialParses', actions)(
       <${Sentence} key=${item.key} nodes=${item.parse} />
     `;
     return html`
-      <p>Preact stuff:</p>
+      ${dictionaryLoading.edict2
+        ? html`<div>Downloading embedded dictionary (EDICT2)...</div>`
+        : ''}
+      ${dictionaryLoading.enamdict
+        ? html`<div>Downloading embedded dictionary (ENAMDICT)...</div>`
+        : ''}
       <form onSubmit=${onSubmit}>
         ${/* btw, we can't use React's onChange; Preact prefers browser-native onInput
         https://github.com/developit/preact/issues/1034 */''}
@@ -284,7 +322,7 @@ function renderApplication(element) {
   `, element);
 }
 
-function parse(sentence) {
+function parse({ mecab_sparse_tostr }, { tagger }, sentence) {
   const whitespaces = [];
   const r = new RegExp('[\\s　]+', 'g');
   let match;
@@ -295,7 +333,7 @@ function parse(sentence) {
     */
     whitespaces.push(match);
   }
-  const mecabOutput = window.wrapped.mecab_sparse_tostr(window.currentPointers.tagger, sentence);
+  const mecabOutput = mecab_sparse_tostr(tagger, sentence);
   console.log(mecabOutput);
   const mecabTokens = toMecabTokens(mecabOutput);
   const plusOriginalWhitespaces = withWhitespacesSplicedBackIn(mecabTokens, whitespaces);
@@ -303,7 +341,25 @@ function parse(sentence) {
   return plusInterWordWhitespaces;
 }
 
+function bindParser(mecabCallbacks, mecabStructures) {
+  return parse.bind(null, mecabCallbacks, mecabStructures);
+}
+
+function initApplication({
+  dictionaryTextPromises,
+}) {
+  boundActions.setDictionaryLoading('edict2', true);
+  boundActions.setDictionaryLoading('enamdict', true);
+  dictionaryTextPromises.edict2.then((text) => {
+    boundActions.dictionaryLoaded('edict2', text);
+  });
+  dictionaryTextPromises.enamdict.then((text) => {
+    boundActions.dictionaryLoaded('enamdict', text);
+  });
+}
+
 export {
   renderApplication,
+  initApplication,
   boundActions,
 };
