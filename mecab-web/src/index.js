@@ -1,4 +1,4 @@
-import { toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
+import { toSubtokensWithKanjiReadings, toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
 import { edictLookup } from './edict2/index.js';
 
 import { createElement, render } from '../web_modules/preact.js';
@@ -99,7 +99,7 @@ const Rubied = ({ theValue, reading }) => {
   `
   };
 
-const Word = ({ token, subtokens }) => {
+const Word = ({ classList, token, subtokens }) => {
   const reducedSubtokens = subtokens.reduce(({
     bufferedText,
     output,
@@ -134,7 +134,7 @@ const Word = ({ token, subtokens }) => {
   }
 
   return html`
-  <span class="token4" data-token=${token}>${output}<//>
+  <span class=${classList || ''} data-token=${token}>${output}<//>
   `
   };
 
@@ -197,34 +197,46 @@ const Definition = connect('dictionaryText', actions)(
     // const renderHeadword = (headword) => {
     //   return '';
     // };
-    const renderHeadwordReadingTuple = (headwordReadingTuple) => {
-      console.log(headwordReadingTuple);
+    const renderHeadwordReadingTuple = (classList, headwordReadingTuple) => {
+      // console.log(headwordReadingTuple);
       return html`
-      <${Word} token=${headwordReadingTuple.headword} subtokens=${headwordReadingTuple.subtokens} />
+      <${Word} classList=${classList} token=${headwordReadingTuple.headword} subtokens=${headwordReadingTuple.subtokens} />
       `;
     };
 
     // console.log('rendering results:');
     // console.log(results.value);
     const renderEdictResult = (result) => {
-      const headwordReadingTuples = result.result.headwordReadingCombinations;
+      let headwordReadingTuples = result.result.headwordReadingCombinations;
       if (!headwordReadingTuples.length) {
-        // it's not supposed to be possible to have 
-        return html`
-        <pre>${JSON.stringify(result.result, null, '  ')}<//>
-        `;
+        // probably we got an entry that's entirely phonetic
+        // so our headword _is_ the reading (but EDICT avoids duplicating information).
+        headwordReadingTuples = result.result.headwords.map((headword) => ({
+          headword: headword.form,
+          reading: headword.form,
+          subtokens: toSubtokensWithKanjiReadings(headword.form, headword.form),
+        }));
       }
+      if (!headwordReadingTuples.length) {
+        // not supposed to be possible, but I suppose we have nothing to show.
+        return '';
+      }
+      const firstTuple = headwordReadingTuples[0];
+      const restTuples = headwordReadingTuples.slice(1);
       return html`
-      ${result.result.headwordReadingCombinations.map(renderHeadwordReadingTuple)}
+      ${renderHeadwordReadingTuple('hero-definition', firstTuple)}
+      <div>${result.result.meaning}<//>
+      ${restTuples.map(renderHeadwordReadingTuple.bind(null, 'alt-definition'))}
       <pre>${JSON.stringify(result.result, null, '  ')}</pre>
       `;
     };
     // { headwords, meaning, readings}
-    const renderEnamdictResult = (result) => {
-      return html`
-      <pre>${JSON.stringify(result.result, null, '  ')}</pre>
-      `;
-    };
+    // const renderEnamdictResult = (result) => {
+    //   return html`
+    //   <pre>${JSON.stringify(result.result, null, '  ')}</pre>
+    //   `;
+    // };
+    const renderEnamdictResult = renderEdictResult;
 
     return html`
     <div>
@@ -252,7 +264,7 @@ const Sentence = ({ nodes }) => {
     }
 
     return {
-      output: html`${acc.output}<${Word} token=${node.token} subtokens=${node.subtokens} />`,
+      output: html`${acc.output}<${Word} classList="token4" token=${node.token} subtokens=${node.subtokens} />`,
     };
   };
 

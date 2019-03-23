@@ -164,6 +164,15 @@ a.token2:hover, .token3:hover, .token4:hover {
   text-decoration-line: underline;
 }
 
+.hero-definition {
+  font-size: 2em;
+}
+
+.alt-definition {
+  display: block;
+  margin-bottom: 1.5em;
+}
+
 .submitter {
   color: white;
   font-weight: 600;
