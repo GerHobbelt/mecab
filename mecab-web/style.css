@@ -138,11 +138,11 @@ textarea {
   margin-bottom: 1.5em;
 }
 
-.richOutput > div.parsed-sentence > span.token {
+.richOutput .parsed-sentence > span.token {
   cursor: pointer;
 }
 
-.richOutput > div.parsed-sentence > span.token:hover {
+.richOutput .parsed-sentence > span.token:hover {
   text-decoration-style: dotted;
   text-decoration-color: black;
   text-decoration-line: underline;

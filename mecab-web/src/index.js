@@ -180,17 +180,49 @@ const Definition = connect('dictionaryText', actions)(
       });
       return '';
     }
+    // const renderHeadWordMiscTag = (headwordMiscTag) => {
+    //   return html`
+    //   <div>${headwordMiscTag}<//>
+    //   `;
+    // };
+    // const renderHeadWord = (headword) => {
+    //   return html`
+    //   <div>${headword.form}${
+    //     headword.tags.misc.length
+    //     ? html`(${headword.tags.misc.map(renderHeadWordMiscTag)}`
+    //     : ''}<//>
+    //   `;
+    // };
+
+    // const renderHeadword = (headword) => {
+    //   return '';
+    // };
+    const renderHeadwordReadingTuple = (headwordReadingTuple) => {
+      console.log(headwordReadingTuple);
+      return html`
+      <${Word} token=${headwordReadingTuple.headword} subtokens=${headwordReadingTuple.subtokens} />
+      `;
+    };
+
     // console.log('rendering results:');
     // console.log(results.value);
     const renderEdictResult = (result) => {
+      const headwordReadingTuples = result.result.headwordReadingCombinations;
+      if (!headwordReadingTuples.length) {
+        // it's not supposed to be possible to have 
+        return html`
+        <pre>${JSON.stringify(result.result, null, '  ')}<//>
+        `;
+      }
       return html`
-      <pre>${JSON.stringify(result)}</pre>
+      ${result.result.headwordReadingCombinations.map(renderHeadwordReadingTuple)}
+      <pre>${JSON.stringify(result.result, null, '  ')}</pre>
       `;
     };
     // { headwords, meaning, readings}
     const renderEnamdictResult = (result) => {
       return html`
-      <pre>${JSON.stringify(result)}</pre>
+      <pre>${JSON.stringify(result.result, null, '  ')}</pre>
       `;
     };
 
@@ -291,6 +323,7 @@ const App = connect('ready,initialParses,initialQuery,parse', actions)(
     const renderParsedQuery = (item) => html`
       <${Sentence} key=${item.key} nodes=${item.parse} />
     `;
+
     return html`
       <form onSubmit=${onSubmit}>
         ${/* btw, we can't use React's onChange; Preact prefers browser-native onInput
