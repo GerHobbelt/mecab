@@ -18,37 +18,46 @@ fi
 xmlstarlet sel -T -t \
 -m '/kanjidic2/character' \
   -v 'literal' \
-  -o ' {' \
+  -o ' ' \
   -v 'misc/jlpt' \
   -o ';' \
-  -o '} {' \
+  -o ' ' \
   -m 'reading_meaning/rmgroup' \
-    -o '[' \
     -m 'reading[@r_type="ja_on"]' \
       -v '.' \
       -o ';' \
       --break \
-    -o '],[' \
+    -o ',' \
     -m 'reading[@r_type="ja_kun"]' \
       -v '.' \
       -o ';' \
       --break \
-    -o ']/' \
+    -o '/' \
     --break \
-  -o '} {' \
+  -o ' ' \
   -m 'reading_meaning/nanori' \
   -v '.' \
   -o ';' \
   --break \
--o '}' \
 -n \
 "$KANJIDIC" \
-| sed 's/[;/]\([]}]\)/\1/g'
+| sed -E 's#[/;,]+([, ]|$)#\1#g' \
+# \
+#| sed -E 's#;([ ])#\1#g'
 # | sed 's/;}/}/g'
 
 : '
 Schema:
-亜 {1} {[ア],[つ.ぐ]} {や;つぎ;つぐ}
-LITERAL {JLPT;} {[ON;],[KUN;]/} {NANORI;}
-
+亜 1 ア;,つ.ぐ や;つぎ;つぐ
+LITERAL TAGS RM_GROUPS NANORI
+LITERAL JLPT; RM_GROUP/ NANORIS
+LITERAL JLPT; ONS,KUNS/ NANORI;
+LITERAL JLPT; ON;,KUN;/ NANORI;
+Split on spaces
+Split TAGS on ; to get JLPT
+Split RM_GROUPS on / to get each RM_GROUP
+Slit each RM_GROUP on , to get ONS and KUNS
+Split each ONS on ; to get ON
+Split each KUNS on ; to get KUN
+Split each NANORIS on ; to get NANORI
 '
