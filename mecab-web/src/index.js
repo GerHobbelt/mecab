@@ -349,6 +349,9 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText'
         const token = tokenNode.getAttribute('data-token');
         if (token) {
           event.stopPropagation();
+          if (token === termResults.key) {
+            return;
+          }
           // console.log(token);
           // useEffect(() => {
           const results = edictLookup([edict2, enamdict], token);
