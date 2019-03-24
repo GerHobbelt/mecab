@@ -17,6 +17,38 @@ fi
 
 xmlstarlet sel -T -t \
 -m '/kanjidic2/character' \
--v 'literal' \
+  -v 'literal' \
+  -o ' {' \
+  -v 'misc/jlpt' \
+  -o ';' \
+  -o '} {' \
+  -m 'reading_meaning/rmgroup' \
+    -o '[' \
+    -m 'reading[@r_type="ja_on"]' \
+      -v '.' \
+      -o ';' \
+      --break \
+    -o '],[' \
+    -m 'reading[@r_type="ja_kun"]' \
+      -v '.' \
+      -o ';' \
+      --break \
+    -o ']/' \
+    --break \
+  -o '} {' \
+  -m 'reading_meaning/nanori' \
+  -v '.' \
+  -o ';' \
+  --break \
+-o '}' \
 -n \
-"$KANJIDIC"
+"$KANJIDIC" \
+| sed 's/[;/]\([]}]\)/\1/g'
+# | sed 's/;}/}/g'
+
+: '
+Schema:
+亜 {1} {[ア],[つ.ぐ]} {や;つぎ;つぐ}
+LITERAL {JLPT;} {[ON;],[KUN;]/} {NANORI;}
+
+'
