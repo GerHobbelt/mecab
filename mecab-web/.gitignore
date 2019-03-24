@@ -17,6 +17,11 @@ enamdict
 enamdict.gz
 enamdict.utf8.txt
 
+# outputs of kanjidic2-downloader.sh
+kanjidic2.xml
+kanjidic2.xml.gz
+kanjidic2-lf.txt
+
 # pre-compressed so that Apache doesn't have to gzip them every time
 mecab.js.gz
 mecab.wasm.gz
