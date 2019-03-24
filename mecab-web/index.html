@@ -97,6 +97,11 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           // console.log(parsed);
           actions.addParse(parsed);
         }
+        if (state.dictionaryText
+          && !state.termResults.key)
+        {
+          actions.chooseTerm('双子');
+        }
       });
 
       const statusElement = document.getElementById('status');

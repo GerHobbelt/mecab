@@ -79,9 +79,23 @@ const actions = (store) => ({
   // setChosenTerm(state, chosenTerm) {
   //   return { ...state, chosenTerm, };
   // },
-  setTermResults(state, termResults) {
-    return { ...state, termResults, };
-  }
+  chooseTerm(state, term) {
+    const {edict2, enamdict} = state.dictionaryText;
+    if (!edict2 || !enamdict) {
+      return state;
+    }
+    const results = edictLookup([edict2, enamdict], term);
+    return {
+      ...state,
+      termResults: {
+        key: term,
+        value: results,
+      },
+    };
+  },
+  // setTermResults(state, termResults) {
+  //   return { ...state, termResults, };
+  // }
 });
 
 function act(store, actionsObj, action, ...args) {
@@ -305,7 +319,7 @@ const Sentence = ({ nodes, order }) => {
 };
 
 const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText', actions)(
-  ({ ready, parses, initialQuery, parse, termResults, dictionaryText, setChosenTerm, addParse, setTermResults }) => {
+  ({ ready, parses, initialQuery, parse, termResults, dictionaryText, addParse, chooseTerm }) => {
     const keyedParses = parses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         // key: `from store: ${acc.nextKey}`,
@@ -352,15 +366,16 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText'
           if (token === termResults.key) {
             return;
           }
+          chooseTerm(token);
           // console.log(token);
           // useEffect(() => {
-          const results = edictLookup([edict2, enamdict], token);
+          // const results = edictLookup([edict2, enamdict], token);
           // setTermResults(token);
           // termResults
-          setTermResults({
-            key: token,
-            value: results,
-          });
+          // setTermResults({
+          //   key: token,
+          //   value: results,
+          // });
           // });
         }
       }
