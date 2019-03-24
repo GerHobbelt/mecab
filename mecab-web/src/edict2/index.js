@@ -151,7 +151,7 @@ function getHeadwordReadingCombinations(headwords, readings) {
 }
 
 function parseEdictLine(glossParser, line) {
-  console.log(line);
+  // console.log(line);
   const [indexSection, meaningSection] = line.split('/', 2);
   const [headwordSection, readingSection] = indexSection.split(' ', 2);
   
@@ -164,6 +164,7 @@ function parseEdictLine(glossParser, line) {
   }
 
   return {
+    line,
     headwords,
     readings,
     headwordReadingCombinations: getHeadwordReadingCombinations(headwords, readings),

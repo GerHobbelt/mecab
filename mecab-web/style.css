@@ -164,6 +164,11 @@ a.token2:hover, .token3:hover, .token4:hover {
   text-decoration-line: underline;
 }
 
+.hero-container {
+  display: block;
+  margin-bottom: 1.5em;
+}
+
 .hero-definition {
   font-size: 2em;
 }

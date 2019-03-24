@@ -183,7 +183,17 @@ const Definition = connect('chosenTerm,dictionaryText', actions)(
           value: results,
         });
       });
-      return '';
+    }
+    const renderProgress = (chosenTerm) => {
+      if (!chosenTerm) {
+        return '';
+      }
+      return html`
+      <div>Looking up '${chosenTerm}'...<//>
+      `
+    };
+    if (!results.value && results.key === chosenTerm) {
+      return renderProgress(chosenTerm);
     }
     // const renderHeadWordMiscTag = (headwordMiscTag) => {
     //   return html`
@@ -226,13 +236,16 @@ const Definition = connect('chosenTerm,dictionaryText', actions)(
         // not supposed to be possible, but I suppose we have nothing to show.
         return '';
       }
+      // <pre>${JSON.stringify(result.result, null, '  ')}</pre>
       const firstTuple = headwordReadingTuples[0];
       const restTuples = headwordReadingTuples.slice(1);
       return html`
-      ${renderHeadwordReadingTuple('hero-definition', firstTuple)}
-      <div>${result.result.meaning}<//>
+      <div class="hero-container">
+        ${renderHeadwordReadingTuple('hero-definition', firstTuple)}
+        <div>${result.result.meaning}<//>
+        <div>${result.result.line}<//>
+      <//>
       ${restTuples.map(renderHeadwordReadingTuple.bind(null, 'alt-definition'))}
-      <pre>${JSON.stringify(result.result, null, '  ')}</pre>
       `;
     };
     // { headwords, meaning, readings}
@@ -249,7 +262,7 @@ const Definition = connect('chosenTerm,dictionaryText', actions)(
       ${results.value.edict2.map(renderEdictResult)}
       <h3>ENAMDICT<//>
       ${results.value.enamdict.map(renderEnamdictResult)}
-    </div>
+    <//>
     `;
   });
 
