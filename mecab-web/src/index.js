@@ -26,7 +26,11 @@ function initStore() {
     initialQuery: `太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。`,
     parses: [],
-    chosenTerm: '',
+    // chosenTerm: undefined,
+    termResults: {
+      key: undefined,
+      value: undefined,
+    },
   });
   const boundActions = getBoundActions(store);
   return [store, boundActions];
@@ -72,9 +76,12 @@ const actions = (store) => ({
       },
     };
   },
-  setChosenTerm(state, chosenTerm) {
-    return { ...state, chosenTerm, };
-  },
+  // setChosenTerm(state, chosenTerm) {
+  //   return { ...state, chosenTerm, };
+  // },
+  setTermResults(state, termResults) {
+    return { ...state, termResults, };
+  }
 });
 
 function act(store, actionsObj, action, ...args) {
@@ -161,40 +168,40 @@ function htmlConcat(html, left, right) {
 }
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
-const Definition = connect('chosenTerm,dictionaryText', actions)(
-  ({ chosenTerm, dictionaryText }) => {
-    const {edict2, enamdict} = dictionaryText;
-    const [results, setResults] = useState({
-      key: chosenTerm,
-      value: undefined,
-    });
+const Definition = connect('termResults', actions)(
+  ({ termResults }) => {
+    // const {edict2, enamdict} = dictionaryText;
+    // const [results, setResults] = useState({
+    //   key: chosenTerm,
+    //   value: undefined,
+    // });
     // console.log(`chosenTerm: ${chosenTerm}`)
     // console.log(`results.value: ${!!results.value}`)
     // console.log(`results.key: ${results.key}`)
 
-    if (!edict2 || !enamdict) {
-      return '';
-    }
-    if (!results.value || results.key !== chosenTerm) {
-      useEffect(() => {
-        const results = edictLookup([edict2, enamdict], chosenTerm);
-        setResults({
-          key: chosenTerm,
-          value: results,
-        });
-      });
-    }
-    const renderProgress = (chosenTerm) => {
-      if (!chosenTerm) {
-        return '';
-      }
-      return html`
-      <div>Looking up '${chosenTerm}'...<//>
-      `
-    };
-    if (!results.value && results.key === chosenTerm) {
-      return renderProgress(chosenTerm);
-    }
+    // if (!edict2 || !enamdict) {
+    //   return '';
+    // }
+    // if (!termResults.value || termResults.key !== chosenTerm) {
+    //   useEffect(() => {
+    //     const results = edictLookup([edict2, enamdict], chosenTerm);
+    //     setResults({
+    //       key: chosenTerm,
+    //       value: results,
+    //     });
+    //   });
+    // }
+    // const renderProgress = (chosenTerm) => {
+    //   if (!chosenTerm) {
+    //     return '';
+    //   }
+    //   return html`
+    //   <div>Looking up '${chosenTerm}'...<//>
+    //   `
+    // };
+    // if (!results.value && results.key === chosenTerm) {
+    //   return renderProgress(chosenTerm);
+    // }
     // const renderHeadWordMiscTag = (headwordMiscTag) => {
     //   return html`
     //   <div>${headwordMiscTag}<//>
@@ -259,9 +266,9 @@ const Definition = connect('chosenTerm,dictionaryText', actions)(
     return html`
     <div>
       <h3>EDICT2<//>
-      ${results.value.edict2.map(renderEdictResult)}
+      ${termResults.value.edict2.map(renderEdictResult)}
       <h3>ENAMDICT<//>
-      ${results.value.enamdict.map(renderEnamdictResult)}
+      ${termResults.value.enamdict.map(renderEnamdictResult)}
     <//>
     `;
   });
@@ -297,8 +304,8 @@ const Sentence = ({ nodes, order }) => {
   `
 };
 
-const App = connect('ready,parses,initialQuery,parse,chosenTerm', actions)(
-  ({ ready, parses, initialQuery, parse, chosenTerm, setChosenTerm, addParse }) => {
+const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText', actions)(
+  ({ ready, parses, initialQuery, parse, termResults, dictionaryText, setChosenTerm, addParse, setTermResults }) => {
     const keyedParses = parses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         // key: `from store: ${acc.nextKey}`,
@@ -329,6 +336,10 @@ const App = connect('ready,parses,initialQuery,parse,chosenTerm', actions)(
     }
 
     function onClick(event) {
+      const {edict2, enamdict} = dictionaryText;
+      if (!edict2 || !enamdict) {
+        return;
+      }
       // console.log(event);
       const tokenNode = event.target.className === 'token4'
       ? event.target
@@ -340,7 +351,13 @@ const App = connect('ready,parses,initialQuery,parse,chosenTerm', actions)(
           event.stopPropagation();
           // console.log(token);
           // useEffect(() => {
-            setChosenTerm(token);
+          const results = edictLookup([edict2, enamdict], token);
+          // setTermResults(token);
+          // termResults
+          setTermResults({
+            key: token,
+            value: results,
+          });
           // });
         }
       }
@@ -374,9 +391,9 @@ const App = connect('ready,parses,initialQuery,parse,chosenTerm', actions)(
       <//>
       <div class="paper-tape columnReverse" onClick=${onClick}>
         ${keyedParses.parses.map(renderParsedQuery)}
-        ${chosenTerm && html`
+        ${termResults.key && html`
           <div class="output-row" style="${{ order: keyedParses.parses.length*2-3 }}">
-            <${Definition} key=${`Definition ${chosenTerm}`} />
+            <${Definition} key=${`Definition ${termResults.key}`} />
           <//>
           `}
       <//>
