@@ -32,6 +32,11 @@ xmlstarlet sel -T -t \
       -v '.' \
       -o ';' \
       --break \
+    -o ',' \
+    -m 'meaning[not(@m_lang)]' \
+      -v '.' \
+      -o ';' \
+      --break \
     -o '/' \
     --break \
   -o ' ' \
