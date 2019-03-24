@@ -90,12 +90,12 @@ This webpage combines language technologies to suggest where to insert spaces,<b
 
       store.subscribe(state => {
         if (state.ready
-          && !state.initialParses.length
+          && !state.parses.length
           && state.initialQuery) {
           // console.log(state.initialQuery);
           const parsed = state.parse(state.initialQuery);
           // console.log(parsed);
-          actions.addInitialParse(parsed);
+          actions.addParse(parsed);
         }
       });
 

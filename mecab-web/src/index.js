@@ -25,7 +25,8 @@ function initStore() {
     },
     initialQuery: `太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。`,
-    initialParses: [],
+    parses: [],
+    chosenTerm: '',
   });
   const boundActions = getBoundActions(store);
   return [store, boundActions];
@@ -35,8 +36,8 @@ const actions = (store) => ({
   setReady(state, ready) {
     return { ...state, ready, };
   },
-  addInitialParse(state, parsedQuery) {
-    return { ...state, initialParses: [...state.initialParses, parsedQuery], };
+  addParse(state, parsedQuery) {
+    return { ...state, parses: [...state.parses, parsedQuery], };
   },
   setupMecab(state, mecabCallbacks, mecabStructures) {
     return {
@@ -70,6 +71,9 @@ const actions = (store) => ({
         [dict]: text,
       },
     };
+  },
+  setChosenTerm(state, chosenTerm) {
+    return { ...state, chosenTerm, };
   },
 });
 
@@ -157,13 +161,16 @@ function htmlConcat(html, left, right) {
 }
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
-const Definition = connect('dictionaryText', actions)(
+const Definition = connect('chosenTerm,dictionaryText', actions)(
   ({ chosenTerm, dictionaryText }) => {
     const {edict2, enamdict} = dictionaryText;
     const [results, setResults] = useState({
       key: chosenTerm,
       value: undefined,
     });
+    // console.log(`chosenTerm: ${chosenTerm}`)
+    // console.log(`results.value: ${!!results.value}`)
+    // console.log(`results.key: ${results.key}`)
 
     if (!edict2 || !enamdict) {
       return '';
@@ -171,8 +178,6 @@ const Definition = connect('dictionaryText', actions)(
     if (!results.value || results.key !== chosenTerm) {
       useEffect(() => {
         const results = edictLookup([edict2, enamdict], chosenTerm);
-        // console.log('setting results:');
-        // console.log(results);
         setResults({
           key: chosenTerm,
           value: results,
@@ -251,10 +256,10 @@ const Definition = connect('dictionaryText', actions)(
 // if we want this connected to the store, we'll need a workaround
 // otherwise the whole list will undergo re-render when any item is added
 // https://stackoverflow.com/a/38726478/5257399
-const Sentence = ({ nodes }) => {
+const Sentence = ({ nodes, order }) => {
   // console.log('sentence render:');
   // console.log(nodes);
-  const [chosenTerm, setChosenTerm] = useState(undefined);
+  // const [chosenTerm, setChosenTerm] = useState(undefined);
 
   const renderNode = (acc, node) => {
     if (node.isWhitespace) {
@@ -268,46 +273,23 @@ const Sentence = ({ nodes }) => {
     };
   };
 
-  function onClick(event) {
-    // console.log(event);
-    const tokenNode = event.target.className === 'token4'
-    ? event.target
-    : event.target.closest('.token4');
-    // console.log(tokenNode);
-    if (tokenNode) {
-      const token = tokenNode.getAttribute('data-token');
-      if (token) {
-        event.stopPropagation();
-        // console.log(token);
-        useEffect(() => {
-          setChosenTerm(token);
-        });
-      }
-    }
-  }
-
   return html`
-  <div class="output-row">
-    <div class="parsed-sentence" onClick=${onClick}>
+  <div class="output-row" style="${{ order }}">
+    <div class="parsed-sentence">
       ${nodes.reduce(renderNode, {
         output: '',
       }).output}
     <//>
-    ${chosenTerm
-      ? html`
-      <${Definition} chosenTerm=${chosenTerm} />
-      `
-      : ''}
   <//>
   `
 };
 
-const App = connect('ready,initialParses,initialQuery,parse', actions)(
-  ({ ready, initialParses, initialQuery, parse, }) => {
-    const keyedInitialParses = initialParses.reduce((acc, parse) => ({
+const App = connect('ready,parses,initialQuery,parse,chosenTerm', actions)(
+  ({ ready, parses, initialQuery, parse, chosenTerm, setChosenTerm, addParse }) => {
+    const keyedParses = parses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
-        key: `from store: ${acc.nextKey}`,
-        // key: acc.nextKey,
+        // key: `from store: ${acc.nextKey}`,
+        key: acc.nextKey,
         parse,
       }],
       nextKey: acc.nextKey + 1,
@@ -317,24 +299,58 @@ const App = connect('ready,initialParses,initialQuery,parse', actions)(
     });
 
     const [query, setQuery] = useState(initialQuery);
-    const [parses, setParses] = useState([]);
-    const [nextParseId, setNextParseId] = useState(0);
+    // const [parses, setParses] = useState([]);
+    // const [nextParseId, setNextParseId] = useState(0);
 
     function onSubmit(event) {
       event.preventDefault();
       const nodes = parse(query);
-      useEffect(() => {
-        setParses(parses.concat({
-          key: nextParseId,
-          parse: nodes,
-        }));
-        setNextParseId(nextParseId+1);
-      });
+      // useEffect(() => {
+        // setParses(parses.concat({
+        //   key: nextParseId,
+        //   parse: nodes,
+        // }));
+        // setNextParseId(nextParseId+2);
+        addParse(nodes);
+      // });
     }
 
+    function onClick(event) {
+      // console.log(event);
+      const tokenNode = event.target.className === 'token4'
+      ? event.target
+      : event.target.closest('.token4');
+      // console.log(tokenNode);
+      if (tokenNode) {
+        const token = tokenNode.getAttribute('data-token');
+        if (token) {
+          event.stopPropagation();
+          // console.log(token);
+          // useEffect(() => {
+            setChosenTerm(token);
+          // });
+        }
+      }
+    }
+
+    // const unionParses = keyedInitialParses.parses.concat(parses);
+    // const parsesBeforeDefinition = unionParses.slice(0, 1);
+    // const parsesAfterDefinition = unionParses.slice(1);
+    // const definitionIndex = unionParses.length
+    // ? unionParses[unionParses.length-1].key-1
+    // : 0; 
+    // const parsesBeforeDefinition = parses.slice(0, 1);
+    // const parsesAfterDefinition = parses.slice(1);
+    // const definitionIndex = parses.length
+    // ? parses[parses.length-1].key-1
+    // : 0; 
+
     const renderParsedQuery = (item) => html`
-      <${Sentence} key=${item.key} nodes=${item.parse} />
+      <${Sentence} order=${item.key*2} key=${item.key} nodes=${item.parse} />
     `;
+
+    // console.log('App render');
+    // ${parsesBeforeDefinition.map(renderParsedQuery)}
 
     return html`
       <form onSubmit=${onSubmit}>
@@ -343,8 +359,13 @@ const App = connect('ready,initialParses,initialQuery,parse', actions)(
         <textarea class="input" value=${query} onInput=${event => setQuery(event.target.value)} />
         <button class="submitter" disabled=${!ready}>Analyse Japanese<//>
       <//>
-      <div class="richOutput columnReverse">
-        ${keyedInitialParses.parses.concat(parses).map(renderParsedQuery)}
+      <div class="paper-tape columnReverse" onClick=${onClick}>
+        ${keyedParses.parses.map(renderParsedQuery)}
+        ${chosenTerm && html`
+          <div class="output-row" style="${{ order: keyedParses.parses.length*2-3 }}">
+            <${Definition} key=${`Definition ${chosenTerm}`} />
+          <//>
+          `}
       <//>
     `;
   });

@@ -121,13 +121,13 @@ textarea {
   box-sizing: border-box;
 }
 
-.richOutput {
+.paper-tape {
   margin-top: 1em;
   display: flex;
   flex-direction: column;
 }
 
-.richOutput .parsed-sentence {
+.paper-tape .parsed-sentence {
   white-space: pre-wrap;
   word-spacing: 0.15em;
   font-size: 18px;
@@ -138,11 +138,11 @@ textarea {
   margin-bottom: 1.5em;
 }
 
-.richOutput .parsed-sentence > span.token {
+.paper-tape .parsed-sentence > span.token {
   cursor: pointer;
 }
 
-.richOutput .parsed-sentence > span.token:hover {
+.paper-tape .parsed-sentence > span.token:hover {
   text-decoration-style: dotted;
   text-decoration-color: black;
   text-decoration-line: underline;
