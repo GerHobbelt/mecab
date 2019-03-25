@@ -20,7 +20,7 @@ enamdict.utf8.txt
 # outputs of kanjidic2-downloader.sh
 kanjidic2.xml
 kanjidic2.xml.gz
-kanjidic2-lf.txt
+kanjidic2-lf.utf8.txt
 
 # pre-compressed so that Apache doesn't have to gzip them every time
 mecab.js.gz
@@ -31,7 +31,7 @@ edict2.utf8.txt.gz
 edict2.utf16.txt.gz
 edict2.utf16le.txt.gz
 enamdict.utf8.txt.gz
-kanjidic2-lf.txt.gz
+kanjidic2-lf.utf8.txt.gz
 
 node_modules
 web_modules

@@ -18,10 +18,12 @@ function initStore() {
     dictionaryLoading: {
       edict2: false,
       enamdict: false,
+      kanjidic2: false,
     },
     dictionaryText: {
       edict2: '',
       enamdict: '',
+      kanjidic2: '',
     },
     initialQuery: `太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。`,
@@ -80,11 +82,11 @@ const actions = (store) => ({
   //   return { ...state, chosenTerm, };
   // },
   chooseTerm(state, term) {
-    const {edict2, enamdict} = state.dictionaryText;
-    if (!edict2 || !enamdict) {
+    const {edict2, enamdict, kanjidic2} = state.dictionaryText;
+    if (!edict2 || !enamdict || !kanjidic2) {
       return state;
     }
-    const results = edictLookup([edict2, enamdict], term);
+    const results = edictLookup([edict2, enamdict, kanjidic2], term);
     return {
       ...state,
       termResults: {
@@ -184,55 +186,6 @@ const boundHtmlConcat = htmlConcat.bind(null, html);
 
 const Definition = connect('termResults', actions)(
   ({ termResults }) => {
-    // const {edict2, enamdict} = dictionaryText;
-    // const [results, setResults] = useState({
-    //   key: chosenTerm,
-    //   value: undefined,
-    // });
-    // console.log(`chosenTerm: ${chosenTerm}`)
-    // console.log(`results.value: ${!!results.value}`)
-    // console.log(`results.key: ${results.key}`)
-
-    // if (!edict2 || !enamdict) {
-    //   return '';
-    // }
-    // if (!termResults.value || termResults.key !== chosenTerm) {
-    //   useEffect(() => {
-    //     const results = edictLookup([edict2, enamdict], chosenTerm);
-    //     setResults({
-    //       key: chosenTerm,
-    //       value: results,
-    //     });
-    //   });
-    // }
-    // const renderProgress = (chosenTerm) => {
-    //   if (!chosenTerm) {
-    //     return '';
-    //   }
-    //   return html`
-    //   <div>Looking up '${chosenTerm}'...<//>
-    //   `
-    // };
-    // if (!results.value && results.key === chosenTerm) {
-    //   return renderProgress(chosenTerm);
-    // }
-    // const renderHeadWordMiscTag = (headwordMiscTag) => {
-    //   return html`
-    //   <div>${headwordMiscTag}<//>
-    //   `;
-    // };
-    // const renderHeadWord = (headword) => {
-    //   return html`
-    //   <div>${headword.form}${
-    //     headword.tags.misc.length
-    //     ? html`(${headword.tags.misc.map(renderHeadWordMiscTag)}`
-    //     : ''}<//>
-    //   `;
-    // };
-
-    // const renderHeadword = (headword) => {
-    //   return '';
-    // };
     const renderHeadwordReadingTuple = (classList, headwordReadingTuple) => {
       // console.log(headwordReadingTuple);
       return html`
@@ -322,7 +275,6 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText'
   ({ ready, parses, initialQuery, parse, termResults, dictionaryText, addParse, chooseTerm }) => {
     const keyedParses = parses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
-        // key: `from store: ${acc.nextKey}`,
         key: acc.nextKey,
         parse,
       }],
@@ -333,25 +285,16 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText'
     });
 
     const [query, setQuery] = useState(initialQuery);
-    // const [parses, setParses] = useState([]);
-    // const [nextParseId, setNextParseId] = useState(0);
 
     function onSubmit(event) {
       event.preventDefault();
       const nodes = parse(query);
-      // useEffect(() => {
-        // setParses(parses.concat({
-        //   key: nextParseId,
-        //   parse: nodes,
-        // }));
-        // setNextParseId(nextParseId+2);
-        addParse(nodes);
-      // });
+      addParse(nodes);
     }
 
     function onClick(event) {
-      const {edict2, enamdict} = dictionaryText;
-      if (!edict2 || !enamdict) {
+      const {edict2, enamdict, kanjidic2} = dictionaryText;
+      if (!edict2 || !enamdict || !kanjidic2) {
         return;
       }
       // console.log(event);
@@ -367,38 +310,15 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText'
             return;
           }
           chooseTerm(token);
-          // console.log(token);
-          // useEffect(() => {
-          // const results = edictLookup([edict2, enamdict], token);
-          // setTermResults(token);
-          // termResults
-          // setTermResults({
-          //   key: token,
-          //   value: results,
-          // });
-          // });
         }
       }
     }
-
-    // const unionParses = keyedInitialParses.parses.concat(parses);
-    // const parsesBeforeDefinition = unionParses.slice(0, 1);
-    // const parsesAfterDefinition = unionParses.slice(1);
-    // const definitionIndex = unionParses.length
-    // ? unionParses[unionParses.length-1].key-1
-    // : 0; 
-    // const parsesBeforeDefinition = parses.slice(0, 1);
-    // const parsesAfterDefinition = parses.slice(1);
-    // const definitionIndex = parses.length
-    // ? parses[parses.length-1].key-1
-    // : 0; 
 
     const renderParsedQuery = (item) => html`
       <${Sentence} order=${item.key*2} key=${item.key} nodes=${item.parse} />
     `;
 
     // console.log('App render');
-    // ${parsesBeforeDefinition.map(renderParsedQuery)}
 
     return html`
       <form onSubmit=${onSubmit}>
@@ -422,6 +342,32 @@ function renderApplication(store, element) {
   return render(html`
   <${Provider} store=${store}>
     <${App} />
+  <//>
+  `, element);
+}
+
+const Progress = connect('dictionaryLoading', actions)(
+  ({ dictionaryLoading }) => {
+    const { edict2, enamdict, kanjidic2 } = dictionaryLoading;
+    return html`
+    <div>
+      ${edict2 && html`
+        <div>Downloading embedded dictionary (EDICT2)...<//>
+        `}
+      ${enamdict && html`
+        <div>Downloading embedded dictionary of names (ENAMDICT)...<//>
+      `}
+      ${kanjidic2 && html`
+        <div>Downloading embedded dictionary of kanji (KANJIDIC2)...<//>
+      `}
+    <//>
+    `;
+    });
+
+function renderProgress(store, element) {
+  return render(html`
+  <${Provider} store=${store}>
+    <${Progress} />
   <//>
   `, element);
 }
@@ -454,16 +400,22 @@ function initApplication({
   store,
   actions,
   element,
+  progressElement,
 }) {
   actions.setDictionaryLoading('edict2', true);
   actions.setDictionaryLoading('enamdict', true);
+  actions.setDictionaryLoading('kanjidic2', true);
   dictionaryTextPromises.edict2.then((text) => {
     actions.dictionaryLoaded('edict2', text);
   });
   dictionaryTextPromises.enamdict.then((text) => {
     actions.dictionaryLoaded('enamdict', text);
   });
+  dictionaryTextPromises.kanjidic2.then((text) => {
+    actions.dictionaryLoaded('kanjidic2', text);
+  });
   renderApplication(store, element);
+  renderProgress(store, progressElement);
 }
 
 export {

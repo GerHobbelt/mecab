@@ -88,7 +88,7 @@ mecab.wasm   # the compiled MeCab CLI executable (incl. libmecab)
 mecab.data   # preloaded assets (mostly the NAIST-jdic dictionary)
 edict2.utf8.txt     # generated via ./edict-downloader.sh
 enamdict.utf8.txt   # generated via ./enamdict-downloader.sh
-kanjidic2-lf.txt    # generated via ./kanjidic2-downloader.sh then ./kanjidic2-parser.sh
+kanjidic2-lf.utf8.txt    # generated via ./kanjidic2-downloader.sh then ./kanjidic2-parser.sh
 src/**/*     # source code
 web_modules/**/*    # library dependencies, bundled by @pika/web
 node_modules/**/*   # (optional, for debug) the source maps of web_modules point here

@@ -21,8 +21,7 @@
 	<div class="emscripten">
       <progress value="0" max="100" id="progress" hidden=1></progress>
     </div>
-    <div id="edict2-loading">Downloading embedded dictionary (EDICT2)...</div>
-    <div id="enamdict-loading">Downloading embedded dictionary of names (ENAMDICT)...</div>
+    <div id="progress-managed"></div>
 
     <h1>MeCab in WebAssembly</h1>
     <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled to WebAssembly.<br>References prior <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>.<br><br>Uses <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> as dataset for MeCab.<br>Uses <a href="https://github.com/WaniKani/WanaKana">WanaKana</a> for transliteration, additional tokenization, and classification.<br>
@@ -73,19 +72,16 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       initApplication({
         dictionaryTextPromises: {
           edict2: fetch('edict2.utf8.txt')
-          .then(response => {
-            edict2LoadingElement.classList.add('hidden');
-            return response.text();
-          }),
+          .then(response => response.text()),
           enamdict: fetch('enamdict.utf8.txt')
-          .then(response => {
-            enamdictLoadingElement.classList.add('hidden');
-            return response.text();
-          }),
+          .then(response => response.text()),
+          kanjidic2: fetch('kanjidic2-lf.utf8.txt')
+          .then(response => response.text()),
         },
         store,
         actions,
         element: document.getElementById('managed'),
+        progressElement: document.getElementById('progress-managed'),
       });
 
       store.subscribe(state => {
@@ -107,8 +103,6 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
-      const edict2LoadingElement = document.getElementById('edict2-loading');
-      const enamdictLoadingElement = document.getElementById('enamdict-loading');
       const wrapped = {};
       const toBeFreed = {
         mecab_model_t: new Set(), // config

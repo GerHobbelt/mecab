@@ -9,7 +9,7 @@ MYDIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 command -v xmlstarlet >/dev/null 2>&1 || { echo >&2 "I require 'xmlstarlet' but it's not installed. Please install via 'brew install xmlstarlet' or similar. Aborting."; exit 1; }
 
 KANJIDIC="${1:-"$MYDIR/kanjidic2.xml"}"
-OUTPUT="${2:-"$MYDIR/kanjidic2-lf.txt"}"
+OUTPUT="${2:-"$MYDIR/kanjidic2-lf.utf8.txt"}"
 
 if [ ! -f "$KANJIDIC" ]; then
     >&2 echo "'kanjidic2.xml' not found at path '$KANJIDIC'! Please run kanjidic2-downloader.sh and copy the file that it outputs into the current working directory."
