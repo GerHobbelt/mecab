@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # usage:
-# kanjidic2-parser.sh kanjidic2.xml
+# ./kanjidic2-parser.sh [input=kanjidic2.xml] [output=kanjidic2-lf.txt]
 
 MYDIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 
@@ -9,6 +9,7 @@ MYDIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 command -v xmlstarlet >/dev/null 2>&1 || { echo >&2 "I require 'xmlstarlet' but it's not installed. Please install via 'brew install xmlstarlet' or similar. Aborting."; exit 1; }
 
 KANJIDIC="${1:-"$MYDIR/kanjidic2.xml"}"
+OUTPUT="${2:-"$MYDIR/kanjidic2-lf.txt"}"
 
 if [ ! -f "$KANJIDIC" ]; then
     >&2 echo "'kanjidic2.xml' not found at path '$KANJIDIC'! Please run kanjidic2-downloader.sh and copy the file that it outputs into the current working directory."
@@ -47,6 +48,7 @@ xmlstarlet sel -T -t \
 -n \
 "$KANJIDIC" \
 | sed -E 's#[\^|`]+([`\$]|$)#\1#g' \
+| tee "$OUTPUT"
 # \
 #| sed -E 's#;([ ])#\1#g'
 # | sed 's/;}/}/g'
@@ -67,5 +69,9 @@ Split each KUNS on | to get KUN
 Split each NANORIS on | to get NANORI
 
 The following characters are vaguely safe for use as delimiters, for now:
-~$`^|
+~$`^|@
+Note:
+~ is used twice in French readings
+^ is used in a couple of pinyin readings
+
 '

@@ -64,6 +64,14 @@ cd ..
 cd mecab-web
 npm install
 npx @pika/web
+# download dictionaries
+./edict-downloader.sh
+./enamdict-downloader.sh
+./kanjidic2-downloader.sh
+
+# we need xmlstarlet to turn the KANJIDIC2 xml into a line-feed text file
+brew install xmlstarlet
+./kanjidic2-parser.sh
 
 # now view mecab-web/index.html
 ```
@@ -73,11 +81,17 @@ npx @pika/web
 In total, you need to serve the following files:
 
 ```
-index.html   // my helper page with a form to invoke functionality from MeCab + WanaKana
-lib/wanakana.min.js  // Wanakana (transliteration, additional tokenization, classification)
-mecab.js     // bootstraps WASM, exports functionality, handles lifecycle, preloads assets
-mecab.wasm   // the compiled MeCab CLI executable (incl. libmecab)
-mecab.data   // preloaded assets (mostly the NAIST-jdic dictionary)
+index.html   # my helper page which combines various Japanese language technologies
+licenses.html
+mecab.js     # bootstraps WASM, exports functionality, handles lifecycle, preloads assets
+mecab.wasm   # the compiled MeCab CLI executable (incl. libmecab)
+mecab.data   # preloaded assets (mostly the NAIST-jdic dictionary)
+edict2.utf8.txt     # generated via ./edict-downloader.sh
+enamdict.utf8.txt   # generated via ./enamdict-downloader.sh
+kanjidic2-lf.txt    # generated via ./kanjidic2-downloader.sh then ./kanjidic2-parser.sh
+src/**/*     # source code
+web_modules/**/*    # library dependencies, bundled by @pika/web
+node_modules/**/*   # (optional, for debug) the source maps of web_modules point here
 ```
 
 See the `.htaccess` for how to set the correct MIME types for streaming compilation, and how to make use of pre-compressed files (instead of gzipping them each time they're requested).
@@ -85,5 +99,5 @@ See the `.htaccess` for how to set the correct MIME types for streaming compilat
 Here's how to create .gz pre-compressed copies of each file:
 
 ```bash
-gzip -kf mecab.data mecab.wasm mecab.js
+gzip -kf mecab.data mecab.wasm mecab.js edict2.utf8.txt enamdict.utf8.txt kanjidic2-lf.txt
 ```
