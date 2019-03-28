@@ -66,6 +66,282 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         initStore,
         initApplication,
       } from './src/index.js';
+      // temporary wanakana debug
+      import { tokenize, toHiragana } from './web_modules/wanakana.js';
+      Object.assign(window, { tokenize, toHiragana });
+
+      /*
+      双子
+      双 {2} {[ソウ] [ふた;たぐい;ならぶ;ふたつ]} {ふ}
+      双$2$ソウ`ふた|たぐい|ならぶ|ふたつ`pair|set|comparison|counter for pairs$ふ
+      子 {4} {[シ;ス;ツ] [こ;-こ;ね]} {い;き;ぎ;く;け;ねっ}
+      子$4$シ|ス|ツ`こ|-こ|ね`child|sign of the rat|11PM-1AM|first sign of Chinese zodiac$い|き|ぎ|く|け|ねっ
+
+      取 {2} {[シュ] [と.る;と.り;と.り-;とり;-ど.り]} {どる}
+      取$2$シュ`と.る|と.り|と.り-|とり|-ど.り`take|fetch|take up$どる
+      引 {3} {[イン] [ひ.く;ひ.き;ひ.き-;-び.き;ひ.ける]} {いな;ひき;ひけ;びき}
+      引$3$イン`ひ.く|ひ.き|ひ.き-|-び.き|ひ.ける`pull|tug|jerk|admit|install|quote|refer to$いな|ひき|ひけ|びき
+      subtokens = tokenize('取り引き', { detailed: true });
+      [{type:    "kanji", value: "取" },
+      { type: "hiragana", value: "り" },
+      { type:    "kanji", value: "引" },
+      { type: "hiragana", value: "き" }]
+      ^(.+)り(.+)き$
+      we're told by ENAMDIC that this isn't a name, so ignore nanori.
+      we peeked ahead and confirmed that we're followed by hiragana.
+      so, we consult kun readings first.
+      we confirmed that we are eligible to be a prefix, so consult that first.
+      we confirmed that we are not eligible to be a suffix, so (do not consult? consult last?).
+      と.り- = yup, (we peeked ahead and confirmed り)
+      と.る  = nope, (we peeked ahead and confirmed no る)
+      と.り  = yup, (we peeked ahead and confirmed り)
+      シュ   = fine (interpret as シュり)
+
+      https://answers.yahoo.com/question/index?qid=20071014152217AAoGVSH
+      ¤ When Kanji are accompanied by Kana (the phönetic characters) the Kunyomi form is *usually* used: 動く is ugo-ku and 動かす is ugo-kasu.
+      ¤ If a Kanji appears by itself, Kunyomi is again *usually* used: 車 is kuruma.
+      ¤ When combined with other Kanji, the Onyomi form is *usually* used: 自動車 is ji-dou-sha. (Notice that the 2nd and 3rd Kanji here have otherwise been identified as ugoku and kuruma.)
+      ¤ There are a few irregular readings which simply must be memorized: 七夕 is tana-bata. 
+
+      iff ENAMDIC tells us the token is a name, consult the nanori
+
+      so, check next subtoken. if it's a kanji: try onyomi first.
+      if it's a hiragana: try kun-yomi first.
+
+      if kunyomi has okurigana, use it only if compatible with next subtoken.
+      okurigana kunyomi preferred over any other kunyomi.
+      kunyomi which are prefixes "と.り-" have more weight if there's more subtokens ahead.
+      kunyomi which are suffixes "-ど.り" have more weight if there's subtokens behind.
+      we don't need the hyphen.
+
+      今朝　＝　けさ
+      今朝方
+      今日
+
+      今$4$コン|キン`いま`now$な
+      朝$3$チョウ`あさ`morning|dynasty|regime|epoch|period|(North) Korea$あ|あそ|ささ|ちか|とも
+      方$3$ホウ`かた|-かた|-がた`direction|person|alternative$から|な|なた|ふさ|まさ|みち|も|わ
+      日$4$ニチ|ジツ`ひ|-び|-か`day|sun|Japan|counter for days$あ|あき|いる|く|くさ|こう|す|たち|に|にっ|につ|へ
+      */
+console.log(
+
+
+(function () {
+function parseKanjidic2Entry(line) {
+  const [kanji, miscSection, rmgroupsSection, nanoriSection] = line.split('$');
+  const nanoris = nanoriSection.split('|');
+  const rmgroups = rmgroupsSection.split('^')
+  .map(rmgroupSection => {
+    const [onSection, kunSection, meaningSection] = rmgroupSection.split('`');
+    const ons = onSection.split('|');
+    const kuns = kunSection.split('|')
+    .map(kun => {
+      // '-ど.り'
+      const [,isSuffix,reading,okurigana,isPrefix]
+      = /^(-?)([^.-]*)\.?([^.-]*)(-?)$/.exec(kun);
+      return {
+        isSuffix,
+        reading,
+        okurigana,
+        isPrefix,
+      };
+    });
+    const meanings = meaningSection.split('|');
+    return {
+      ons,
+      kuns,
+      meanings,
+      nanoris,
+    }
+  });
+
+  if (!rmgroups.length) {
+    console.warn(`No rmgroups detected for kanji '${kanji}'. Giving empty result.`)
+    return {
+      ons: [],
+      kuns: [],
+      meanings: [],
+      nanoris,
+    }
+  }
+  if (rmgroups.length > 1) {
+    console.warn(`Multiple rmgroups (${rmgroups.length}) detected for kanji '${kanji}'. Reading first only.`)
+  }
+  return rmgroups[0];
+}
+function kanjidic2Lookup(kanji) {
+  if (kanji === '双') {
+    return '双$2$ソウ`ふた|たぐい|ならぶ|ふたつ`pair|set|comparison|counter for pairs$ふ';
+  } else if (kanji === '子') {
+    return '子$4$シ|ス|ツ`こ|-こ|ね`child|sign of the rat|11PM-1AM|first sign of Chinese zodiac$い|き|ぎ|く|け|ねっ';
+  } else if (kanji === '一') {
+    return '一$4$イチ|イツ`ひと-|ひと.つ`one|one radical (no.1)$かず|い|いっ|いる|かつ|かづ|てん|はじめ|ひ|ひとつ|まこと';
+  } else if (kanji === '本') {
+    return '本$4$ホン`もと`book|present|main|origin|true|real|counter for long cylindrical things$まと|ごう';
+  }
+
+  return undefined;
+}
+function getCaptureGroup(
+  kanji,
+  isName,
+  tokenIsEntirelyKanji,
+  precedingSubtoken,
+  followingSubtoken) {
+  const entry = kanjidic2Lookup(kanji);
+  if (!entry) {
+    return '(.*)';
+  }
+  const parsed = parseKanjidic2Entry(entry);
+  const onReadingsInHiragana = parsed.ons.map(toHiragana);
+  const kunsWithCompatibleOkurigana = parsed.kuns.filter(kun =>
+    !kun.okurigana
+    || (followingSubtoken && followingSubtoken.type === 'hiragana' && followingSubtoken.value === kun.okurigana))
+  const prefixKunReadings = kunsWithCompatibleOkurigana.filter(kun => kun.isPrefix);
+  const suffixKunReadings = kunsWithCompatibleOkurigana.filter(kun => kun.isSuffix);
+  const infixKunReadings = kunsWithCompatibleOkurigana.filter(kun => !kun.isPrefix && !kun.isSuffix);
+  const getKunReading = (kun) => kun.reading;
+  const candidates = new Set([]);
+  const candidatesByLength = new Map([]);
+
+  if (isName) {
+    parsed.nanoris.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  } else {
+    if (tokenIsEntirelyKanji) {
+      onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+
+    if (['kanji', 'hiragana', 'katakana'].includes(followingSubtoken && followingSubtoken.type)) {
+      prefixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+    if (['kanji', 'hiragana', 'katakana'].includes(precedingSubtoken && precedingSubtoken.type)) {
+      suffixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+
+    infixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+
+    if (!tokenIsEntirelyKanji) {
+      onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+    // last-resort, happens to be a way to get the いっ reading for 一
+    parsed.nanoris.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  }
+
+  [...candidatesByLength.keys()]
+  .sort((a, b) => b-a)
+  .forEach(key => [...candidatesByLength.get(key)]
+    .forEach(candidates.add, candidates));
+  // even last-er resort
+  candidates.add('.*');
+  
+  return `(${[...candidates].join('|')})`;
+}
+function makeRegex(subtokens, isName) {
+  const tokenIsEntirelyKanji = subtokens.reduce((accumulator, currentSubtoken) => 
+    accumulator && currentSubtoken.type === 'kanji',
+    true /* vacuous truth */);
+  return subtokens.reduce((accumulator, currentSubtoken, subtokenIx, subtokenArr) => {
+    const prevSubtoken = subtokenIx-1 >= 0
+    ? subtokenArr[subtokenIx-1]
+    : undefined;
+    const nextSubtoken = subtokenIx+1 < subtokenArr.length
+    ? subtokenArr[subtokenIx+1]
+    : undefined;
+    if (currentSubtoken.type === 'kanji') {
+      return accumulator + currentSubtoken.value.split('')
+      .reduce((patternAcc, currentKanji, kanjiIx, kanjiArr) => {
+        const [kanjiBehind, kanjiAhead] = [
+        kanjiArr.slice(0, kanjiIx).join(),
+        kanjiArr.slice(kanjiIx+1).join(),
+        ];
+
+        let precedingSubtoken;
+        if (kanjiBehind) {
+          precedingSubtoken = {
+            type: 'kanji',
+            value: kanjiBehind,
+          };
+        } else {
+          precedingSubtoken = prevSubtoken;
+        }
+
+        let followingSubtoken;
+        if (kanjiAhead) {
+          followingSubtoken = {
+            type: 'kanji',
+            value: kanjiBehind,
+          };
+        } else {
+          followingSubtoken = nextSubtoken;
+        }
+        return patternAcc + getCaptureGroup(
+          currentKanji,
+          isName,
+          tokenIsEntirelyKanji,
+          precedingSubtoken,
+          followingSubtoken);
+      }, '');
+    }
+    return accumulator + currentSubtoken.value;
+  }, '^') + '$';
+}
+function toSubtokensWithKanjiReadings(token, readingHiragana, isName) {
+  const subtokens = tokenize(token, { detailed: true });
+  // if there's no kanji, then there's nothing to fit furigana to
+  // and if there's anything other than kanji+hiragana, then our "strip okurigana" tactic won't work.
+  if (!subtokens.some((subtoken) => ['kanji'].includes(subtoken.type))
+    || subtokens.some((subtoken) => !['kanji', 'hiragana'].includes(subtoken.type))) {
+    // console.error(`token ${token} has non-kanji or non-hiragana subtokens.`);
+    // we're only interested in fitting a hiragana reading to kanji words that (may) have okurigana.
+    // we're not interested in fitting our hiragana reading to a katakana or English word, for example.
+    return subtokens;
+  }
+  const regExStr = makeRegex(subtokens, isName);
+
+  return regExStr;
+
+  // const regEx = new RegExp(regExStr);
+  // const matches = regEx.exec(readingHiragana);
+  // if (!matches) {
+  //   console.error(`We were unable to match the hiragana reading '${readingHiragana}' to token '${token}'. We used RegExp /${regExStr}/.`);
+  //   return subtokens;
+  // }
+
+  // return subtokens.reduce((accumulator, currentSubtoken) => {
+  //   const [chunks, kanjiReadings] = accumulator;
+  //   if (currentSubtoken.type === 'kanji') {
+  //     return [
+  //       [
+  //         ...chunks,
+  //         {
+  //           ...currentSubtoken,
+  //           reading: kanjiReadings[0],
+  //         },
+  //       ],
+  //       kanjiReadings.slice(1)
+  //     ];
+  //   }
+  //   return [
+  //     [
+  //       ...chunks,
+  //       currentSubtoken,
+  //     ],
+  //     kanjiReadings,
+  //   ];
+  // }, [[], matches.slice(1)])[0];
+}
+function run() {
+  const isName = false;
+  return [
+  toSubtokensWithKanjiReadings('双子', 'ふたご', isName),
+  toSubtokensWithKanjiReadings('一本', 'いっぽん', isName),
+  ];
+}
+return run;
+})()()
+
+)
+
 
       const [store, actions] = initStore();
 
@@ -76,7 +352,8 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           enamdict: fetch('enamdict.utf8.txt')
           .then(response => response.text()),
           kanjidic2: fetch('kanjidic2-lf.utf8.txt')
-          .then(response => response.text()),
+          .then(response => response.text())
+          .then(text => window.kanjidic = text),
         },
         store,
         actions,

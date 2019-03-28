@@ -178,7 +178,7 @@ function regExpEscape(s) {
     return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-function edictLookup([edict2Text, enamdictText], term) {
+function edictLookup([edict2Text, enamdictText, kanjdic2Text], term) {
 	const regexp = new RegExp(
   `^(.*(^|[\\[;])${
     regExpEscape(term)
