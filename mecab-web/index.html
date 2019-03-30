@@ -99,7 +99,9 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           && state.dictionaryText.enamdict
           && state.kanjidic2Lookup)
         {
-          actions.chooseTerm('双子');
+          actions.chooseTerm({
+            token: '双子',
+          });
         }
       });
 

@@ -92,16 +92,26 @@ const actions = (store) => ({
   // setChosenTerm(state, chosenTerm) {
   //   return { ...state, chosenTerm, };
   // },
-  chooseTerm(state, term) {
+  chooseTerm(state, mecabToken) {
     const {edict2, enamdict} = state.dictionaryText;
     if (!edict2 || !enamdict || !state.kanjidic2Lookup) {
       return state;
     }
-    const results = edictLookup([edict2, enamdict, state.kanjidic2Lookup], term);
+    if (getTermKey(mecabToken) === state.termResults.key) {
+      return state;
+    }
+    const results = edictLookup(
+      [
+      edict2,
+      enamdict,
+      state.kanjidic2Lookup
+      ],
+      mecabToken);
+
     return {
       ...state,
       termResults: {
-        key: term,
+        key: getTermKey(mecabToken),
         value: results,
       },
     };
@@ -110,6 +120,15 @@ const actions = (store) => ({
   //   return { ...state, termResults, };
   // }
 });
+
+/** Just a way to check whether we're looking up the same entry twice */
+function getTermKey({ token, readingHiragana, dictionaryForm }) {
+  return JSON.stringify({
+    token,
+    readingHiragana,
+    dictionaryForm,
+  });
+}
 
 function act(store, actionsObj, action, ...args) {
   return store.setState(
@@ -137,7 +156,13 @@ const Rubied = ({ theValue, reading }) => {
   `
   };
 
-const Word = ({ classList, token, subtokens }) => {
+const Word = ({ classList, mecabToken }) => {
+  const {
+    token,
+    subtokens,
+    readingHiragana,
+    dictionaryForm
+    } = mecabToken;
   const reducedSubtokens = subtokens.reduce(({
     bufferedText,
     output,
@@ -171,8 +196,16 @@ const Word = ({ classList, token, subtokens }) => {
     output = boundHtmlConcat(output, reducedSubtokens.bufferedText);
   }
 
+  // data-readingHiragana=${readingHiragana}
+  // data-dictionaryForm=${dictionaryForm}
+
   return html`
-  <span class=${classList || ''} data-token=${token}>${output}<//>
+  <span
+  class=${classList || ''}
+  data-token=${token}
+  data-reading-hiragana=${readingHiragana}
+  data-dictionary-form=${dictionaryForm}
+  >${output}<//>
   `
   };
 
@@ -198,9 +231,12 @@ const boundHtmlConcat = htmlConcat.bind(null, html);
 const Definition = connect('termResults,kanjidic2Lookup', actions)(
   ({ termResults,kanjidic2Lookup }) => {
     const renderReadingTuple = (classList, headword, readingTuple) => {
-      // console.log(headwordReadingTuple);
+      const mecabTokenLike = {
+        token: headword,
+        subtokens: readingTuple.subtokens,
+      };
       return html`
-      <${Word} classList=${classList} token=${headword} subtokens=${readingTuple.subtokens} />
+      <${Word} classList=${classList} mecabToken=${mecabTokenLike} />
       `;
     };
 
@@ -307,7 +343,7 @@ const Sentence = ({ nodes, order }) => {
     }
 
     return {
-      output: html`${acc.output}<${Word} classList="token4" token=${node.token} subtokens=${node.subtokens} />`,
+      output: html`${acc.output}<${Word} classList="token4" mecabToken=${node} />`,
     };
   };
 
@@ -357,10 +393,12 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText,
         const token = tokenNode.getAttribute('data-token');
         if (token) {
           event.stopPropagation();
-          if (token === termResults.key) {
-            return;
-          }
-          chooseTerm(token);
+          const mecabToken = {
+            token,
+            readingHiragana: tokenNode.getAttribute('data-reading-hiragana'),
+            dictionaryForm: tokenNode.getAttribute('data-dictionary-form'),
+          };
+          chooseTerm(mecabToken);
         }
       }
     }

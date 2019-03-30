@@ -50,7 +50,8 @@ function parseEntry(entry) {
   };
 }
 
-function classifyRelevance(term, results) {
+function classifyRelevance(mecabToken, results) {
+  const term = getSearchTerm(mecabToken);
   // console.warn(term);
   // console.warn(results);
   return results.map((result) => ({
@@ -93,13 +94,7 @@ function sortByRelevance(results) {
   return results.sort((left, right) => {
     const leftMerits = quantifyRelevance(left);
     const rightMerits = quantifyRelevance(right);
-    if (leftMerits > rightMerits) {
-      return -1;
-    } else if (leftMerits === rightMerits) {
-      return 0;
-    } else {
-      return 1;
-    }
+    return rightMerits - leftMerits;
   });
 }
 
@@ -179,36 +174,67 @@ function groupHeadwordReadingCombinations(tuples) {
   }), {});
 }
 
-function getMostRelevantHeadwordReadingCombination(term, headwordReadingsTuples) {
+function classifyRelevanceHeadwordReadingCombination(
+  mecabToken,
+  { headword, readingTuple },
+  ) {
+  const { token, readingHiragana, dictionaryForm } = mecabToken;
+  const { reading } = readingTuple;
+  const term = getSearchTerm(mecabToken);
+  let relevance = 0;
+  if (headword === term) {
+    relevance++;
+  }
+  if (headword === readingHiragana) {
+    relevance++;
+  }
+  if (reading === readingHiragana) {
+    relevance++;
+  }
+  return relevance;
+}
+
+function getMostRelevantHeadwordReadingCombination(
+  mecabToken,
+  headwordReadingsTuples,
+  ) {
+  const term = getSearchTerm(mecabToken);
   const result = headwordReadingsTuples
   .reduce((headwordTupleAcc, { headword, readingTuples }) => {
-    const bestReadingRuple = readingTuples.reduce((readingTupleAcc, readingTuple) => {
-      const { reading, subtokens } = readingTuple;
-      const proposed = readingTuple;
-      return {
-        ...readingTupleAcc,
-        first: readingTupleAcc.first || proposed,
-        best: proposed,
+    const proposed = readingTuples.reduce((readingTupleAcc, readingTuple) => {
+      const proposed = {
+        headword,
+        readingTuple,
       };
+      const relevance = classifyRelevanceHeadwordReadingCombination(
+        mecabToken,
+        proposed);
+      if (relevance > readingTupleAcc.relevance) {
+        return {
+          relevance,
+          proposed,
+        }
+      }
+      return readingTupleAcc;
     }, {
-      first: undefined,
-      best: undefined,
-    }).best;
-    const proposed = {
-      headword,
-      readingTuple: bestReadingRuple,
-    };
-    return {
-      ...headwordTupleAcc,
-      first: headwordTupleAcc.first || proposed,
-      best: (term === headword && proposed) || headwordTupleAcc.best,
-    };
+      relevance: -1,
+      proposed: undefined,
+    }).proposed;
+    const relevance = classifyRelevanceHeadwordReadingCombination(
+      mecabToken,
+      proposed);
+    if (relevance > headwordTupleAcc.relevance) {
+      return {
+        relevance,
+        proposed,
+      }
+    }
+    return headwordTupleAcc;
   }, {
-    first: undefined,
-    best: undefined,
+    relevance: -1,
+    proposed: undefined,
   });
-  return result.best
-  || result.first;
+  return result.proposed;
 }
 
 function parseEdictLine(
@@ -255,7 +281,15 @@ function regExpEscape(s) {
     return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], term) {
+/** Decide our preference / fallback */
+function getSearchTerm(mecabToken) {
+  const { token, readingHiragana, dictionaryForm } = mecabToken;
+  return dictionaryForm || token;
+}
+
+function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], mecabToken) {
+  const term = getSearchTerm(mecabToken);
+  // console.log(mecabToken)
 	const regexp = new RegExp(
   `^(.*(^|[\\[;])${
     regExpEscape(term)
@@ -264,12 +298,12 @@ function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], term) {
   const enamDictMatches = (enamdictText.match(regexp) || []);
 
   const relevantHeadwordReadingCombinationGetter
-  = getMostRelevantHeadwordReadingCombination.bind(null, term)
+  = getMostRelevantHeadwordReadingCombination.bind(null, mecabToken)
 
   return {
     edict2: sortByRelevance(
       classifyRelevance(
-        term,
+        mecabToken,
         edict2Matches.map(
           parseEdictLine.bind(
             null,
@@ -278,7 +312,7 @@ function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], term) {
             parseEdictMeaningSection)))),
     enamdict: sortByRelevance(
       classifyRelevance(
-        term,
+        mecabToken,
         enamDictMatches.map(
           parseEdictLine.bind(
             null,
