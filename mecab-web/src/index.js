@@ -205,11 +205,15 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
     };
 
     const renderHeadwordReadingTuple = (classList, headwordReadingTuple) => {
-      return headwordReadingTuple.readingTuples.map(
-        renderReadingTuple.bind(
-          null,
-          classList,
-          headwordReadingTuple.headword));
+      return html`
+      <div class="alt-headword-container">
+        ${headwordReadingTuple.readingTuples.map(
+          renderReadingTuple.bind(
+            null,
+            classList,
+            headwordReadingTuple.headword))}
+      <//>
+      `;
     };
 
     // console.log('rendering results:');
