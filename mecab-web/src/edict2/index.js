@@ -117,7 +117,7 @@ function sortByRelevance(results) {
  * かあ /(n) cawing (of a crow)/EntL2076470X/
  * Some headwords have no readings (e.g. if there's no kanji).
  */
-function getHeadwordReadingCombinations(headwords, readings) {
+function getHeadwordReadingCombinations(kanjidic2Lookup, headwords, readings) {
   const headwordForms = headwords.map((headword) => headword.form);
   return readings.reduce((acc, reading) => {
     return acc.concat(
@@ -144,13 +144,14 @@ function getHeadwordReadingCombinations(headwords, readings) {
     headword,
     reading,
     subtokens: toSubtokensWithKanjiReadings(
+      kanjidic2Lookup,
       headword,
       reading,
       ),
   }));
 }
 
-function parseEdictLine(glossParser, line) {
+function parseEdictLine(kanjidic2Lookup, glossParser, line) {
   // console.log(line);
   const [indexSection, meaningSection] = line.split('/', 2);
   const [headwordSection, readingSection] = indexSection.split(' ', 2);
@@ -163,11 +164,17 @@ function parseEdictLine(glossParser, line) {
     readings = parseEntrySection(readingSectionInner[1]);
   }
 
+  const headwordReadingCombinations = getHeadwordReadingCombinations(
+    kanjidic2Lookup,
+    headwords,
+    readings);
+  // console.log(headwordReadingCombinations);
+
   return {
     line,
     headwords,
     readings,
-    headwordReadingCombinations: getHeadwordReadingCombinations(headwords, readings),
+    headwordReadingCombinations,
     meaning: glossParser(meaningSection),
   };
 }
@@ -178,7 +185,7 @@ function regExpEscape(s) {
     return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-function edictLookup([edict2Text, enamdictText, kanjdic2Text], term) {
+function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], term) {
 	const regexp = new RegExp(
   `^(.*(^|[\\[;])${
     regExpEscape(term)
@@ -193,6 +200,7 @@ function edictLookup([edict2Text, enamdictText, kanjdic2Text], term) {
         edict2Matches.map(
           parseEdictLine.bind(
             null,
+            kanjidic2Lookup,
             parseEdictMeaningSection)))),
     enamdict: sortByRelevance(
       classifyRelevance(
@@ -200,6 +208,7 @@ function edictLookup([edict2Text, enamdictText, kanjdic2Text], term) {
         enamDictMatches.map(
           parseEdictLine.bind(
             null,
+            kanjidic2Lookup,
             parseEnamdictMeaningSection)))),
   }
 }

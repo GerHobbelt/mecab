@@ -1,4 +1,5 @@
 import { toSubtokensWithKanjiReadings, toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
+import { kanjidic2Lookup } from './kanjidic2/index.js';
 import { edictLookup } from './edict2/index.js';
 
 import { createElement, render } from '../web_modules/preact.js';
@@ -15,6 +16,7 @@ function initStore() {
     mecabCallbacks: {},
     mecabStructures: {},
     parse: undefined,
+    kanjidic2Lookup: undefined,
     dictionaryLoading: {
       edict2: false,
       enamdict: false,
@@ -53,7 +55,7 @@ const actions = (store) => ({
       parse: bindParser(
         mecabCallbacks,
         mecabStructures),
-      ready: true,
+      ready: !!state.kanjidic2Lookup,
     }
   },
   setDictionaryLoading(state, dict, bool) {
@@ -66,8 +68,17 @@ const actions = (store) => ({
     };
   },
   dictionaryLoaded(state, dict, text) {
+    let ready = state.ready;
+    let kanjidic2LookupFunc = state.kanjidic2Lookup;
+    if (dict === 'kanjidic2'
+      && !state.kanjidic2Lookup) {
+      kanjidic2LookupFunc = kanjidic2Lookup.bind(null, text);
+      ready = !!state.parse;
+    }
     return {
       ...state,
+      ready,
+      kanjidic2Lookup: kanjidic2LookupFunc,
       dictionaryLoading: {
         ...state.dictionaryLoading,
         [dict]: false,
@@ -82,11 +93,11 @@ const actions = (store) => ({
   //   return { ...state, chosenTerm, };
   // },
   chooseTerm(state, term) {
-    const {edict2, enamdict, kanjidic2} = state.dictionaryText;
-    if (!edict2 || !enamdict || !kanjidic2) {
+    const {edict2, enamdict} = state.dictionaryText;
+    if (!edict2 || !enamdict || !state.kanjidic2Lookup) {
       return state;
     }
-    const results = edictLookup([edict2, enamdict, kanjidic2], term);
+    const results = edictLookup([edict2, enamdict, state.kanjidic2Lookup], term);
     return {
       ...state,
       termResults: {
@@ -184,8 +195,8 @@ function htmlConcat(html, left, right) {
 }
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
-const Definition = connect('termResults', actions)(
-  ({ termResults }) => {
+const Definition = connect('termResults,kanjidic2Lookup', actions)(
+  ({ termResults,kanjidic2Lookup }) => {
     const renderHeadwordReadingTuple = (classList, headwordReadingTuple) => {
       // console.log(headwordReadingTuple);
       return html`
@@ -203,7 +214,10 @@ const Definition = connect('termResults', actions)(
         headwordReadingTuples = result.result.headwords.map((headword) => ({
           headword: headword.form,
           reading: headword.form,
-          subtokens: toSubtokensWithKanjiReadings(headword.form, headword.form),
+          subtokens: toSubtokensWithKanjiReadings(
+            kanjidic2Lookup,
+            headword.form,
+            headword.form),
         }));
       }
       if (!headwordReadingTuples.length) {
@@ -271,8 +285,8 @@ const Sentence = ({ nodes, order }) => {
   `
 };
 
-const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText', actions)(
-  ({ ready, parses, initialQuery, parse, termResults, dictionaryText, addParse, chooseTerm }) => {
+const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText,kanjidic2Lookup', actions)(
+  ({ ready, parses, initialQuery, parse, termResults, dictionaryText, addParse, chooseTerm, kanjidic2Lookup }) => {
     const keyedParses = parses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         key: acc.nextKey,
@@ -288,7 +302,7 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText'
 
     function onSubmit(event) {
       event.preventDefault();
-      const nodes = parse(query);
+      const nodes = parse(kanjidic2Lookup, query);
       addParse(nodes);
     }
 
@@ -372,7 +386,7 @@ function renderProgress(store, element) {
   `, element);
 }
 
-function parse({ mecab_sparse_tostr }, { tagger }, sentence) {
+function parse({ mecab_sparse_tostr }, { tagger }, kanjidic2Lookup, sentence) {
   const whitespaces = [];
   const r = new RegExp('[\\s　]+', 'g');
   let match;
@@ -385,7 +399,7 @@ function parse({ mecab_sparse_tostr }, { tagger }, sentence) {
   }
   const mecabOutput = mecab_sparse_tostr(tagger, sentence);
   console.log(mecabOutput);
-  const mecabTokens = toMecabTokens(mecabOutput);
+  const mecabTokens = toMecabTokens(kanjidic2Lookup, mecabOutput);
   const plusOriginalWhitespaces = withWhitespacesSplicedBackIn(mecabTokens, whitespaces);
   const plusInterWordWhitespaces = withInterWordWhitespaces(plusOriginalWhitespaces);
   return plusInterWordWhitespaces;

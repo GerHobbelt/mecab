@@ -1,17 +1,112 @@
 import { tokenize, toHiragana } from '../../web_modules/wanakana.js';
+import { parseKanjidic2Entry } from '../kanjidic2/index.js';
 
-/**
-input:
-('取り引き', 'とりひき')
-output:
-[
-  {type: 'kanji', value: '取', reading: 'と''},
-  {type: 'hiragana', value: 'り'},
-  {type: 'kanji', value: '引', reading: 'ひ'},
-  {type: 'hiragana', value: 'き'},
-]
-*/
-function toSubtokensWithKanjiReadings(token, readingHiragana) {
+function getCaptureGroup(
+  kanjidic2Lookup,
+  kanji,
+  isName,
+  tokenIsEntirelyKanji,
+  precedingSubtoken,
+  followingSubtoken) {
+  const entry = kanjidic2Lookup(kanji);
+  if (!entry) {
+    return '(.*)';
+  }
+  const parsed = parseKanjidic2Entry(entry);
+  const onReadingsInHiragana = parsed.ons.map(toHiragana);
+  const kunsWithCompatibleOkurigana = parsed.kuns.filter(kun =>
+    !kun.okurigana
+    || (followingSubtoken && followingSubtoken.type === 'hiragana' && followingSubtoken.value === kun.okurigana))
+  const prefixKunReadings = kunsWithCompatibleOkurigana.filter(kun => kun.isPrefix);
+  const suffixKunReadings = kunsWithCompatibleOkurigana.filter(kun => kun.isSuffix);
+  const infixKunReadings = kunsWithCompatibleOkurigana.filter(kun => !kun.isPrefix && !kun.isSuffix);
+  const getKunReading = (kun) => kun.reading;
+  const candidates = new Set([]);
+  const candidatesByLength = new Map([]);
+
+  if (isName) {
+    parsed.nanoris.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  } else {
+    if (tokenIsEntirelyKanji) {
+      onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+
+    if (['kanji', 'hiragana', 'katakana'].includes(followingSubtoken && followingSubtoken.type)) {
+      prefixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+    if (['kanji', 'hiragana', 'katakana'].includes(precedingSubtoken && precedingSubtoken.type)) {
+      suffixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+
+    infixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+
+    if (!tokenIsEntirelyKanji) {
+      onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+    }
+    // last-resort, happens to be a way to get the いっ reading for 一
+    parsed.nanoris.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  }
+
+  [...candidatesByLength.keys()]
+  .sort((a, b) => b-a)
+  .forEach(key => [...candidatesByLength.get(key)]
+    .forEach(candidates.add, candidates));
+  // even last-er resort
+  candidates.add('.*');
+  
+  return `(${[...candidates].join('|')})`;
+}
+function makeRegex(kanjidic2Lookup, subtokens, isName) {
+  const tokenIsEntirelyKanji = subtokens.reduce((accumulator, currentSubtoken) => 
+    accumulator && currentSubtoken.type === 'kanji',
+    true /* vacuous truth */);
+  return subtokens.reduce((accumulator, currentSubtoken, subtokenIx, subtokenArr) => {
+    const prevSubtoken = subtokenIx-1 >= 0
+    ? subtokenArr[subtokenIx-1]
+    : undefined;
+    const nextSubtoken = subtokenIx+1 < subtokenArr.length
+    ? subtokenArr[subtokenIx+1]
+    : undefined;
+    if (currentSubtoken.type === 'kanji') {
+      return accumulator + currentSubtoken.value.split('')
+      .reduce((patternAcc, currentKanji, kanjiIx, kanjiArr) => {
+        const [kanjiBehind, kanjiAhead] = [
+        kanjiArr.slice(0, kanjiIx).join(),
+        kanjiArr.slice(kanjiIx+1).join(),
+        ];
+
+        let precedingSubtoken;
+        if (kanjiBehind) {
+          precedingSubtoken = {
+            type: 'kanji',
+            value: kanjiBehind,
+          };
+        } else {
+          precedingSubtoken = prevSubtoken;
+        }
+
+        let followingSubtoken;
+        if (kanjiAhead) {
+          followingSubtoken = {
+            type: 'kanji',
+            value: kanjiBehind,
+          };
+        } else {
+          followingSubtoken = nextSubtoken;
+        }
+        return patternAcc + getCaptureGroup(
+          kanjidic2Lookup,
+          currentKanji,
+          isName,
+          tokenIsEntirelyKanji,
+          precedingSubtoken,
+          followingSubtoken);
+      }, '');
+    }
+    return accumulator + currentSubtoken.value;
+  }, '^') + '$';
+}
+function toSubtokensWithKanjiReadings(kanjidic2Lookup, token, readingHiragana, isName) {
   const subtokens = tokenize(token, { detailed: true });
   // if there's no kanji, then there's nothing to fit furigana to
   // and if there's anything other than kanji+hiragana, then our "strip okurigana" tactic won't work.
@@ -22,12 +117,7 @@ function toSubtokensWithKanjiReadings(token, readingHiragana) {
     // we're not interested in fitting our hiragana reading to a katakana or English word, for example.
     return subtokens;
   }
-  const regExStr = subtokens.reduce((accumulator, currentSubtoken) => {
-    if (currentSubtoken.type === 'kanji') {
-      return accumulator + '(.+)';
-    }
-    return accumulator + currentSubtoken.value;
-  }, '^') + '$';
+  const regExStr = makeRegex(kanjidic2Lookup, subtokens, isName);
 
   const regEx = new RegExp(regExStr);
   const matches = regEx.exec(readingHiragana);
@@ -36,28 +126,63 @@ function toSubtokensWithKanjiReadings(token, readingHiragana) {
     return subtokens;
   }
 
-  return subtokens.reduce((accumulator, currentSubtoken) => {
-    const [chunks, kanjiReadings] = accumulator;
-    if (currentSubtoken.type === 'kanji') {
-      return [
-        [
+  return {
+    regex: regExStr,
+    reduced: subtokens.reduce((accumulator, currentSubtoken) => {
+      const { chunks, kanjiReadings } = accumulator;
+      if (currentSubtoken.type === 'kanji') {
+        const kanjiReduced = currentSubtoken.value.split('')
+        .reduce((kanjiAcc, currentKanji) => {
+          const { chunks, kanjiReadings } = kanjiAcc;
+          if (!kanjiReadings.length
+            || (!kanjiReadings[0] && chunks.length)) {
+            return {
+              chunks: [
+              ...chunks.slice(0, chunks.length-1),
+              {
+                ...chunks[chunks.length-1],
+                value: chunks[chunks.length-1].value + currentKanji,
+              },
+              ],
+              kanjiReadings: kanjiReadings.slice(1),
+            }
+          }
+          return {
+            chunks: [
+              ...chunks,
+              {
+                type: 'kanji',
+                value: currentKanji,
+                reading: kanjiReadings[0],
+              },
+            ],
+            kanjiReadings: kanjiReadings.slice(1),
+          };
+        }, {
+          chunks: [],
+          kanjiReadings,
+        });
+
+        return {
+          chunks: [
+            ...chunks,
+            ...kanjiReduced.chunks,
+          ],
+          kanjiReadings: kanjiReduced.kanjiReadings,
+        };
+      }
+      return {
+        chunks: [
           ...chunks,
-          {
-            ...currentSubtoken,
-            reading: kanjiReadings[0],
-          },
+          currentSubtoken,
         ],
-        kanjiReadings.slice(1)
-      ];
-    }
-    return [
-      [
-        ...chunks,
-        currentSubtoken,
-      ],
-      kanjiReadings,
-    ];
-  }, [[], matches.slice(1)])[0];
+        kanjiReadings,
+      };
+    }, {
+      chunks: [],
+      kanjiReadings: matches.slice(1),
+    }).chunks,
+  }.reduced;
 }
 
 function splitAtIndices(str, indices) {
@@ -148,7 +273,7 @@ function withInterWordWhitespaces(mecabTokens) {
   }, [[], undefined])[0];
 }
 
-function toMecabTokens(mecabOutput) {
+function toMecabTokens(kanjidic2Lookup, mecabOutput) {
   return mecabOutput.replace(/EOS\n$/, '')
   .split('\n')
   .filter(x => x)
@@ -172,8 +297,11 @@ function toMecabTokens(mecabOutput) {
     pronunication, // 発音
     ] = features;
     const readingHiragana = toHiragana(reading, { passRomaji: false });
-    const subtokens = toSubtokensWithKanjiReadings(token, readingHiragana);
-    // console.warn(subtokens);
+    const subtokens = toSubtokensWithKanjiReadings(
+      kanjidic2Lookup,
+      token,
+      readingHiragana
+      );
     return {
       token,
       surfaceLayerForm,
