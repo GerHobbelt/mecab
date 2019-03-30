@@ -13,8 +13,8 @@ function kanjidic2Lookup(kanjidic2Text, kanji) {
 }
 
 function parseKanjidic2Entry(line) {
-  const [kanji, miscSection, rmgroupsSection, nanoriSection] = line.split('$');
-  const nanoris = nanoriSection.split('|');
+  const [kanji, jlptLevel, rmgroupsSection, nanoriSection] = line.split('$');
+  const nanoris = nanoriSection.split('^');
   const rmgroups = rmgroupsSection.split('^')
   .map(rmgroupSection => {
     const [onSection, kunSection, meaningSection] = rmgroupSection.split('`');

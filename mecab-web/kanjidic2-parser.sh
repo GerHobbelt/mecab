@@ -21,7 +21,6 @@ xmlstarlet sel -T -t \
   -v 'literal' \
   -o '$' \
   -v 'misc/jlpt' \
-  -o '|' \
   -o '$' \
   -m 'reading_meaning/rmgroup' \
     -m 'reading[@r_type="ja_on"]' \
@@ -38,40 +37,49 @@ xmlstarlet sel -T -t \
       -v '.' \
       -o '|' \
       --break \
-    -o '^' \
+    -o '`' \
     --break \
   -o '$' \
   -m 'reading_meaning/nanori' \
-  -v '.' \
-  -o '|' \
-  --break \
+    -v '.' \
+    -o '^' \
+    --break \
+  -o '$' \
 -n \
 "$KANJIDIC" \
-| sed -E 's#[\^|`]+([`\$]|$)#\1#g' \
+| sed -E '
+s#\$$##g;
+s#\^(\$|$)#\1#g;
+s#`(\^|\$|$)#\1#g;
+s#\|(`|\^|\$|$)#\1#g' \
 | tee "$OUTPUT"
-# \
-#| sed -E 's#;([ ])#\1#g'
-# | sed 's/;}/}/g'
 
 : '
+The split hierarchy is:
+\n
+$
+^
+`
+|
+
 Schema:
-亜$1$ア|`つ.ぐ$や|つぎ|つぐ
-LITERAL$TAGS$RM_GROUPS$NANORI
-LITERAL$JLPT|$RM_GROUP/$NANORIS
-LITERAL$JLPT|$ONS`KUNS/$NANORI|
-LITERAL$JLPT|$ON|`KUN|/$NANORI|
+亜$1$ア`つ.ぐ`Asia|rank next|come after|-ous$や^つぎ^つぐ
+LITERAL$JLPT$RM_GROUPS$NANORIS$
+LITERAL$JLPT$RM_GROUP^$NANORI^$
+LITERAL$JLPT$ONS`KUNS`MEANINGS`^$NANORI^$
+LITERAL$JLPT$ON|`KUN|`MEANING|`^$NANORI^$
+Split on newline (well, you probably already did this)
 Split on dollars
-Split TAGS on | to get JLPT
 Split RM_GROUPS on ^ to get each RM_GROUP
 Slit each RM_GROUP on ` to get ONS and KUNS
 Split each ONS on | to get ON
 Split each KUNS on | to get KUN
-Split each NANORIS on | to get NANORI
+Split each NANORIS on ^ to get NANORI
 
-The following characters are vaguely safe for use as delimiters, for now:
-~$`^|@
+The following characters are vaguely safe for use as delimiters, for now (assuming English readings):
+~$`^|@#
 Note:
 ~ is used twice in French readings
 ^ is used in a couple of pinyin readings
-
+# is used once in a Spanish reading
 '
