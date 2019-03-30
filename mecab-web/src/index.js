@@ -233,7 +233,9 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
         <div>${result.result.meaning}<//>
         <div>${result.result.line}<//>
       <//>
-      ${restTuples.map(renderHeadwordReadingTuple.bind(null, 'alt-definition'))}
+      <div class="alt-container">
+        ${restTuples.map(renderHeadwordReadingTuple.bind(null, 'alt-definition'))}
+      <//>
       `;
     };
     // { headwords, meaning, readings}

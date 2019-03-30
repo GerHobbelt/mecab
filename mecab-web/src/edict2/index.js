@@ -168,7 +168,6 @@ function parseEdictLine(kanjidic2Lookup, glossParser, line) {
     kanjidic2Lookup,
     headwords,
     readings);
-  // console.log(headwordReadingCombinations);
 
   return {
     line,

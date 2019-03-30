@@ -14,12 +14,20 @@ function kanjidic2Lookup(kanjidic2Text, kanji) {
 
 function parseKanjidic2Entry(line) {
   const [kanji, jlptLevel, rmgroupsSection, nanoriSection] = line.split('$');
-  const nanoris = nanoriSection.split('^');
-  const rmgroups = rmgroupsSection.split('^')
+  const nanoris = nanoriSection
+  ? nanoriSection.split('^')
+  : []
+  const rmgroups = (rmgroupsSection
+  ? rmgroupsSection.split('^')
+  : [])
   .map(rmgroupSection => {
     const [onSection, kunSection, meaningSection] = rmgroupSection.split('`');
-    const ons = onSection.split('|');
-    const kuns = kunSection.split('|')
+    const ons = onSection
+    ? onSection.split('|')
+    : []
+    const kuns = (kunSection
+    ? kunSection.split('|')
+    : [])
     .map(kun => {
       // '-ど.り'
       const [,isSuffix,reading,okurigana,isPrefix]
@@ -34,7 +42,9 @@ function parseKanjidic2Entry(line) {
     if (!meaningSection) {
       console.warn(line)
     }
-    const meanings = meaningSection.split('|');
+    const meanings = meaningSection
+    ? meaningSection.split('|')
+    : []
     return {
       ons,
       kuns,

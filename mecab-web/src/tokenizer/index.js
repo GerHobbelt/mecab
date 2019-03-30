@@ -106,20 +106,10 @@ function makeRegex(kanjidic2Lookup, subtokens, isName) {
     return accumulator + currentSubtoken.value;
   }, '^') + '$';
 }
-function toSubtokensWithKanjiReadings(kanjidic2Lookup, token, readingHiragana, isName) {
-  const subtokens = tokenize(token, { detailed: true });
-  // if there's no kanji, then there's nothing to fit furigana to
-  // and if there's anything other than kanji+hiragana, then our "strip okurigana" tactic won't work.
-  if (!subtokens.some((subtoken) => ['kanji'].includes(subtoken.type))
-    || subtokens.some((subtoken) => !['kanji', 'hiragana'].includes(subtoken.type))) {
-    // console.error(`token ${token} has non-kanji or non-hiragana subtokens.`);
-    // we're only interested in fitting a hiragana reading to kanji words that (may) have okurigana.
-    // we're not interested in fitting our hiragana reading to a katakana or English word, for example.
-    return subtokens;
-  }
-  const regExStr = makeRegex(kanjidic2Lookup, subtokens, isName);
 
+function fixReadingToRegex(kanjidic2Lookup, token, readingHiragana, subtokens, regExStr, isName) {
   const regEx = new RegExp(regExStr);
+
   const matches = regEx.exec(readingHiragana);
   if (!matches) {
     console.error(`We were unable to match the hiragana reading '${readingHiragana}' to token '${token}'. We used RegExp /${regExStr}/.`);
@@ -182,7 +172,33 @@ function toSubtokensWithKanjiReadings(kanjidic2Lookup, token, readingHiragana, i
       chunks: [],
       kanjiReadings: matches.slice(1),
     }).chunks,
-  }.reduced;
+  };
+}
+
+function toSubtokensWithKanjiReadings(kanjidic2Lookup, token, readingHiragana, isName) {
+  const subtokens = tokenize(token, { detailed: true });
+  // if there's no kanji, then there's nothing to fit furigana to
+  // and if there's anything other than kanji+hiragana, then our "strip okurigana" tactic won't work.
+  if (!subtokens.some((subtoken) => ['kanji'].includes(subtoken.type))
+    || subtokens.some((subtoken) => !['kanji', 'hiragana'].includes(subtoken.type))) {
+    // console.error(`token ${token} has non-kanji or non-hiragana subtokens.`);
+    // we're only interested in fitting a hiragana reading to kanji words that (may) have okurigana.
+    // we're not interested in fitting our hiragana reading to a katakana or English word, for example.
+    return subtokens;
+  }
+  const regExStr = makeRegex(
+    kanjidic2Lookup,
+    subtokens,
+    isName);
+
+  return fixReadingToRegex(
+    kanjidic2Lookup,
+    token,
+    readingHiragana,
+    subtokens,
+    regExStr,
+    isName
+    ).reduced;
 }
 
 function splitAtIndices(str, indices) {
