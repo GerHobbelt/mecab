@@ -66,7 +66,6 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         initStore,
         initApplication,
       } from './src/index.js';
-
       const [store, actions] = initStore();
 
       initApplication({
@@ -76,7 +75,8 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           enamdict: fetch('enamdict.utf8.txt')
           .then(response => response.text()),
           kanjidic2: fetch('kanjidic2-lf.utf8.txt')
-          .then(response => response.text()),
+          .then(response => response.text())
+          .then(text => window.kanjidic = text),
         },
         store,
         actions,
@@ -89,12 +89,15 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           && !state.parses.length
           && state.initialQuery) {
           // console.log(state.initialQuery);
-          const parsed = state.parse(state.initialQuery);
+          const parsed = state.parse(state.kanjidic2Lookup, state.initialQuery);
           // console.log(parsed);
           actions.addParse(parsed);
         }
-        if (state.dictionaryText
-          && !state.termResults.key)
+        if (!state.termResults.key
+          && state.dictionaryText
+          && state.dictionaryText.edict2
+          && state.dictionaryText.enamdict
+          && state.kanjidic2Lookup)
         {
           actions.chooseTerm('双子');
         }

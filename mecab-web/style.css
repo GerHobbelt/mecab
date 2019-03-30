@@ -173,9 +173,22 @@ a.token2:hover, .token3:hover, .token4:hover {
   font-size: 2em;
 }
 
-.alt-definition {
-  display: block;
+.alt-container {
+  display: flex;
+  flex-direction: column;
   margin-bottom: 1.5em;
+}
+
+.alt-headword-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-bottom: 1em;
+}
+
+.alt-definition {
+  margin-right: 1.5em;
 }
 
 .submitter {
