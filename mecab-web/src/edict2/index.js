@@ -326,6 +326,7 @@ function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], mecabToken) {
 
 export {
 	edictLookup,
+  getSearchTerm,
   classifyRelevance,
   quantifyRelevance,
 };

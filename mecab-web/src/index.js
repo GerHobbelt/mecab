@@ -1,6 +1,7 @@
+import { tokenize } from '../web_modules/wanakana.js';
 import { toSubtokensWithKanjiReadings, toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
 import { kanjidic2Lookup } from './kanjidic2/index.js';
-import { edictLookup } from './edict2/index.js';
+import { edictLookup, getSearchTerm } from './edict2/index.js';
 
 import { createElement, render } from '../web_modules/preact.js';
 import { useState, useEffect } from '../web_modules/preact/hooks.js';
@@ -97,22 +98,38 @@ const actions = (store) => ({
     if (!edict2 || !enamdict || !state.kanjidic2Lookup) {
       return state;
     }
-    if (getTermKey(mecabToken) === state.termResults.key) {
+    let subtokens = mecabToken.subtokens
+    if (!mecabToken.subtokens) {
+      if (mecabToken.readingHiragana) {
+        subtokens = toSubtokensWithKanjiReadings(
+          state.kanjidic2Lookup,
+          mecabToken.token,
+          mecabToken.readingHiragana);
+      } else {
+        subtokens = tokenize(mecabToken.token, { detailed: true });
+      }
+    }
+    const standardizedToken = {
+      ...mecabToken,
+      subtokens,
+    }
+    if (getTermKey(standardizedToken) === getTermKey(state.termResults.key || {})) {
       return state;
     }
+
     const results = edictLookup(
       [
       edict2,
       enamdict,
       state.kanjidic2Lookup
       ],
-      mecabToken);
+      standardizedToken);
     console.log(results);
 
     return {
       ...state,
       termResults: {
-        key: getTermKey(mecabToken),
+        key: standardizedToken,
         value: results,
       },
     };
@@ -299,6 +316,11 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
       .filter(({ readingTuples }) => readingTuples.length);
       // console.log(remainingTuples)
 
+      // const mecabTokenLike = {
+      //   token: headword,
+      //   subtokens: readingTuple.subtokens,
+      // };
+
       return html`
       <div class="hero-container">
         ${renderReadingTuple('hero-definition', bestHeadwordReadingTuple.headword, bestHeadwordReadingTuple.readingTuple)}
@@ -318,8 +340,19 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
     // };
     const renderEnamdictResult = renderEdictResult;
 
+    const term = getSearchTerm(termResults.key);
+
     return html`
     <div>
+      <h2>Dictionary results for 
+        '<${Word} classList="" mecabToken=${termResults.key} />'
+        ${termResults.key.dictionaryForm
+          && termResults.key.dictionaryForm !== termResults.key.token
+          && ` (dictionary form: '${termResults.key.dictionaryForm}')`}
+      <//>
+      Look up <a href=${
+        `https://jisho.org/search/${encodeURIComponent(term)}`
+      }>${term}<//> on Jisho.org
       <h3>EDICT2<//>
       ${termResults.value.edict2.map(renderEdictResult)}
       <h3>ENAMDICT<//>
