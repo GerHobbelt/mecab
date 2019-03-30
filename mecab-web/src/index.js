@@ -107,6 +107,7 @@ const actions = (store) => ({
       state.kanjidic2Lookup
       ],
       mecabToken);
+    console.log(results);
 
     return {
       ...state,

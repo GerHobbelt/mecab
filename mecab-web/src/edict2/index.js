@@ -51,6 +51,7 @@ function parseEntry(entry) {
 }
 
 function classifyRelevance(mecabToken, results) {
+  const { token, readingHiragana, dictionaryForm } = mecabToken;
   const term = getSearchTerm(mecabToken);
   // console.warn(term);
   // console.warn(results);
@@ -59,15 +60,15 @@ function classifyRelevance(mecabToken, results) {
       queryMatchesHeadword: result.headwords.reduce((acc, curr) => {
         return acc || curr.form === term;
       }, false),
-      queryMatchesPriorityHeadword: result.headwords.reduce((acc, curr) => {
-        return acc || (curr.tags.priorityEntry && curr.form === term);
-      }, false),
+      // queryMatchesPriorityHeadword: result.headwords.reduce((acc, curr) => {
+      //   return acc || (curr.tags.priorityEntry && curr.form === term);
+      // }, false),
       queryMatchesReading: result.readings.reduce((acc, curr) => {
-        return acc || curr.form === term;
+        return acc || curr.form === readingHiragana;
       }, false),
-      queryMatchesPriorityReading: result.readings.reduce((acc, curr) => {
-        return acc || (curr.tags.priorityEntry && curr.form === term);
-      }, false),
+      // queryMatchesPriorityReading: result.readings.reduce((acc, curr) => {
+      //   return acc || (curr.tags.priorityEntry && curr.form === readingHiragana);
+      // }, false),
     },
     result,
   }));
@@ -78,22 +79,23 @@ function quantifyRelevance(relevance) {
   if (relevance.queryMatchesHeadword) {
     merits++;
   }
-  if (relevance.queryMatchesPriorityHeadword) {
-    merits++;
-  }
+  // if (relevance.queryMatchesPriorityHeadword) {
+  //   merits++;
+  // }
   if (relevance.queryMatchesReading) {
     merits++;
   }
-  if (relevance.queryMatchesPriorityReading) {
-    merits++;
-  }
+  // if (relevance.queryMatchesPriorityReading) {
+  //   merits++;
+  // }
+  // relevance.merits = merits;
   return merits;
 }
 
 function sortByRelevance(results) {
   return results.sort((left, right) => {
-    const leftMerits = quantifyRelevance(left);
-    const rightMerits = quantifyRelevance(right);
+    const leftMerits = quantifyRelevance(left.relevance);
+    const rightMerits = quantifyRelevance(right.relevance);
     return rightMerits - leftMerits;
   });
 }
