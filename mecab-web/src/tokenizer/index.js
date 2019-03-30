@@ -26,23 +26,24 @@ function getCaptureGroup(
 
   if (isName) {
     parsed.nanoris.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
-  } else {
-    if (tokenIsEntirelyKanji) {
-      onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
-    }
+  }
+  if (!isName && tokenIsEntirelyKanji) {
+    onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  }
 
-    if (['kanji', 'hiragana', 'katakana'].includes(followingSubtoken && followingSubtoken.type)) {
-      prefixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
-    }
-    if (['kanji', 'hiragana', 'katakana'].includes(precedingSubtoken && precedingSubtoken.type)) {
-      suffixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
-    }
+  if (['kanji', 'hiragana', 'katakana'].includes(followingSubtoken && followingSubtoken.type)) {
+    prefixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  }
+  if (['kanji', 'hiragana', 'katakana'].includes(precedingSubtoken && precedingSubtoken.type)) {
+    suffixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  }
 
-    infixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  infixKunReadings.map(getKunReading).forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
 
-    if (!tokenIsEntirelyKanji) {
-      onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
-    }
+  if (isName || !tokenIsEntirelyKanji) {
+    onReadingsInHiragana.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
+  }
+  if (!isName) {
     // last-resort, happens to be a way to get the いっ reading for 一
     parsed.nanoris.forEach(candidate => candidatesByLength.set(candidate.split('').length, [...(candidatesByLength.get(candidate.split('').length)||[]), candidate]));
   }
@@ -316,7 +317,8 @@ function toMecabTokens(kanjidic2Lookup, mecabOutput) {
     const subtokens = toSubtokensWithKanjiReadings(
       kanjidic2Lookup,
       token,
-      readingHiragana
+      readingHiragana,
+      partOfSpeech === '固有名詞' // if proper noun, treat as name
       );
     return {
       token,
