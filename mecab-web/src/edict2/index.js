@@ -179,7 +179,44 @@ function groupHeadwordReadingCombinations(tuples) {
   }), {});
 }
 
-function parseEdictLine(kanjidic2Lookup, glossParser, line) {
+function getMostRelevantHeadwordReadingCombination(term, headwordReadingsTuples) {
+  const result = headwordReadingsTuples
+  .reduce((headwordTupleAcc, { headword, readingTuples }) => {
+    const bestReadingRuple = readingTuples.reduce((readingTupleAcc, readingTuple) => {
+      const { reading, subtokens } = readingTuple;
+      const proposed = readingTuple;
+      return {
+        ...readingTupleAcc,
+        first: readingTupleAcc.first || proposed,
+        best: proposed,
+      };
+    }, {
+      first: undefined,
+      best: undefined,
+    }).best;
+    const proposed = {
+      headword,
+      readingTuple: bestReadingRuple,
+    };
+    return {
+      ...headwordTupleAcc,
+      first: headwordTupleAcc.first || proposed,
+      best: (term === headword && proposed) || headwordTupleAcc.best,
+    };
+  }, {
+    first: undefined,
+    best: undefined,
+  });
+  return result.best
+  || result.first;
+}
+
+function parseEdictLine(
+  kanjidic2Lookup,
+  relevantHeadwordReadingCombinationGetter,
+  glossParser,
+  line,
+  ) {
   // console.log(line);
   const [indexSection, meaningSection] = line.split('/', 2);
   const [headwordSection, readingSection] = indexSection.split(' ', 2);
@@ -199,11 +236,15 @@ function parseEdictLine(kanjidic2Lookup, glossParser, line) {
         headwords,
         readings)));
 
+  const bestHeadwordReadingCombination
+  = relevantHeadwordReadingCombinationGetter(headwordReadingCombinations);
+
   return {
     line,
     headwords,
     readings,
     headwordReadingCombinations,
+    bestHeadwordReadingCombination,
     meaning: glossParser(meaningSection),
   };
 }
@@ -222,6 +263,9 @@ function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], term) {
   const edict2Matches = (edict2Text.match(regexp) || []);
   const enamDictMatches = (enamdictText.match(regexp) || []);
 
+  const relevantHeadwordReadingCombinationGetter
+  = getMostRelevantHeadwordReadingCombination.bind(null, term)
+
   return {
     edict2: sortByRelevance(
       classifyRelevance(
@@ -230,6 +274,7 @@ function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], term) {
           parseEdictLine.bind(
             null,
             kanjidic2Lookup,
+            relevantHeadwordReadingCombinationGetter,
             parseEdictMeaningSection)))),
     enamdict: sortByRelevance(
       classifyRelevance(
@@ -238,6 +283,7 @@ function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], term) {
           parseEdictLine.bind(
             null,
             kanjidic2Lookup,
+            relevantHeadwordReadingCombinationGetter,
             parseEnamdictMeaningSection)))),
   }
 }

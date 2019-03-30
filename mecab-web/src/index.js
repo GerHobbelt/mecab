@@ -220,6 +220,7 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
     // console.log(results.value);
     const renderEdictResult = (result) => {
       let headwordReadingTuples = result.result.headwordReadingCombinations;
+      let bestHeadwordReadingTuple = result.result.bestHeadwordReadingCombination;
       if (!headwordReadingTuples.length) {
         // probably we got an entry that's entirely phonetic
         // so our headword _is_ the reading (but EDICT avoids duplicating information).
@@ -238,30 +239,37 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
         // not supposed to be possible, but I suppose we have nothing to show.
         return '';
       }
-      // <pre>${JSON.stringify(result.result, null, '  ')}</pre>
-      const firstTuple = headwordReadingTuples[0];
-      const firstReadingTuple = firstTuple.readingTuples[0];
-      let restTuples;
-      if (firstTuple.readingTuples.length > 1) {
-        restTuples = [
-        {
-          ...firstTuple,
-          readingTuples: firstTuple.readingTuples.slice(1),
-        },
-        ...headwordReadingTuples.slice(1),
-        ]
-      } else {
-        restTuples = headwordReadingTuples.slice(1);
+      if (!bestHeadwordReadingTuple) {
+        // might happen if we got an entry that's entirely phonetic (as above)
+        const { headword, readingTuples } = headwordReadingTuples[0];
+        if (!readingTuples.length) {
+          // we could check the other readingTuples, but this isn't supposed to be possible anyway.
+          return '';
+        }
+        bestHeadwordReadingTuple = {
+          headword,
+          readingTuple: readingTuples[0],
+        };
       }
+      // console.log(bestHeadwordReadingTuple)
+      // console.log(headwordReadingTuples)
+      const remainingTuples = headwordReadingTuples.map((headwordReadingTuple) => ({
+        ...headwordReadingTuple,
+        readingTuples: headwordReadingTuple.readingTuples.filter(({ reading }) => 
+          headwordReadingTuple.headword !== bestHeadwordReadingTuple.headword
+          || reading !== bestHeadwordReadingTuple.readingTuple.reading),
+      }))
+      .filter(({ readingTuples }) => readingTuples.length);
+      // console.log(remainingTuples)
 
       return html`
       <div class="hero-container">
-        ${renderReadingTuple('hero-definition', firstTuple.headword, firstReadingTuple)}
+        ${renderReadingTuple('hero-definition', bestHeadwordReadingTuple.headword, bestHeadwordReadingTuple.readingTuple)}
         <div>${result.result.meaning}<//>
         <div>${result.result.line}<//>
       <//>
       <div class="alt-container">
-        ${restTuples.map(renderHeadwordReadingTuple.bind(null, 'alt-definition'))}
+        ${remainingTuples.map(renderHeadwordReadingTuple.bind(null, 'alt-definition'))}
       <//>
       `;
     };
