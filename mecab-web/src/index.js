@@ -197,11 +197,19 @@ const boundHtmlConcat = htmlConcat.bind(null, html);
 
 const Definition = connect('termResults,kanjidic2Lookup', actions)(
   ({ termResults,kanjidic2Lookup }) => {
-    const renderHeadwordReadingTuple = (classList, headwordReadingTuple) => {
+    const renderReadingTuple = (classList, headword, readingTuple) => {
       // console.log(headwordReadingTuple);
       return html`
-      <${Word} classList=${classList} token=${headwordReadingTuple.headword} subtokens=${headwordReadingTuple.subtokens} />
+      <${Word} classList=${classList} token=${headword} subtokens=${readingTuple.subtokens} />
       `;
+    };
+
+    const renderHeadwordReadingTuple = (classList, headwordReadingTuple) => {
+      return headwordReadingTuple.readingTuples.map(
+        renderReadingTuple.bind(
+          null,
+          classList,
+          headwordReadingTuple.headword));
     };
 
     // console.log('rendering results:');
@@ -213,11 +221,13 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
         // so our headword _is_ the reading (but EDICT avoids duplicating information).
         headwordReadingTuples = result.result.headwords.map((headword) => ({
           headword: headword.form,
-          reading: headword.form,
-          subtokens: toSubtokensWithKanjiReadings(
-            kanjidic2Lookup,
-            headword.form,
-            headword.form),
+          readingTuples: [{
+            reading: headword.form,
+            subtokens: toSubtokensWithKanjiReadings(
+              kanjidic2Lookup,
+              headword.form,
+              headword.form),
+          }],
         }));
       }
       if (!headwordReadingTuples.length) {
@@ -226,10 +236,23 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
       }
       // <pre>${JSON.stringify(result.result, null, '  ')}</pre>
       const firstTuple = headwordReadingTuples[0];
-      const restTuples = headwordReadingTuples.slice(1);
+      const firstReadingTuple = firstTuple.readingTuples[0];
+      let restTuples;
+      if (firstTuple.readingTuples.length > 1) {
+        restTuples = [
+        {
+          ...firstTuple,
+          readingTuples: firstTuple.readingTuples.slice(1),
+        },
+        ...headwordReadingTuples.slice(1),
+        ]
+      } else {
+        restTuples = headwordReadingTuples.slice(1);
+      }
+
       return html`
       <div class="hero-container">
-        ${renderHeadwordReadingTuple('hero-definition', firstTuple)}
+        ${renderReadingTuple('hero-definition', firstTuple.headword, firstReadingTuple)}
         <div>${result.result.meaning}<//>
         <div>${result.result.line}<//>
       <//>

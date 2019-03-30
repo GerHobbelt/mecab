@@ -151,6 +151,34 @@ function getHeadwordReadingCombinations(kanjidic2Lookup, headwords, readings) {
   }));
 }
 
+function headwordReadingCombinationsSorted(grouped) {
+  return Object.keys(grouped)
+    .sort((leftHeadword, rightHeadword) => leftHeadword.localeCompare(rightHeadword, 'ja-JP'))
+    .map(headword => ({
+      headword,
+      readingTuples: grouped[headword]
+        .sort((left, right) => left.reading.localeCompare(right.reading, 'ja-JP')),
+    }));
+}
+
+function groupHeadwordReadingCombinations(tuples) {
+  return tuples.reduce((
+    acc,
+    {
+      headword,
+      reading,
+      subtokens,
+    }) => ({
+    ...acc,
+    [headword]: [
+    ...(acc[headword] || []),
+    {
+      reading,
+      subtokens,
+    }]
+  }), {});
+}
+
 function parseEdictLine(kanjidic2Lookup, glossParser, line) {
   // console.log(line);
   const [indexSection, meaningSection] = line.split('/', 2);
@@ -164,10 +192,12 @@ function parseEdictLine(kanjidic2Lookup, glossParser, line) {
     readings = parseEntrySection(readingSectionInner[1]);
   }
 
-  const headwordReadingCombinations = getHeadwordReadingCombinations(
-    kanjidic2Lookup,
-    headwords,
-    readings);
+  const headwordReadingCombinations = headwordReadingCombinationsSorted(
+    groupHeadwordReadingCombinations(
+      getHeadwordReadingCombinations(
+        kanjidic2Lookup,
+        headwords,
+        readings)));
 
   return {
     line,
