@@ -96,6 +96,7 @@ In total, you need to serve the following files:
 ```
 .htaccess
 index.html   # my helper page which combines various Japanese language technologies
+style.css
 licenses.html
 mecab.js     # bootstraps WASM, exports functionality, handles lifecycle, preloads assets
 mecab.wasm   # the compiled MeCab CLI executable (incl. libmecab)
@@ -128,17 +129,20 @@ That said: the _service worker_ does need complete and up-to-date knowledge of t
 ```bash
 npx workbox-cli injectManifest workbox-config.js
 
+rm -rf dist
 mkdir -p dist
-cp \
+
+cp -R \
 .htaccess \
 index.html \
+style.css \
 LICENSE \
 licenses.html \
 manifest.webmanifest \
 sw.js \
 logo \
 src \
-web_modules/**/*.js \
+web_modules \
 workbox_modules \
 mecab.data \
 mecab.wasm \
