@@ -360,7 +360,7 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
       } target="_blank">${term}<//> on Jisho.org
       <//>
       ${termResults.value.edict2.map(renderEdictResult)}
-      <h4 class="names-section">Names<//>
+      <div class="names-section">Names<//>
       ${termResults.value.enamdict.map(renderEnamdictResult)}
     <//>
     `;

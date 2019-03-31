@@ -23,6 +23,10 @@ AddType application/wasm .wasm
 # https://kripken.github.io/emscripten-site/docs/compiling/Deploying-Pages.html
 AddType application/octet-stream .data
 
+# https://developer.mozilla.org/en-US/docs/Web/Manifest#Deploying_a_manifest_with_the_link_tag
+# https://developer.mozilla.org/en-US/docs/Web/Manifest#Mime_type
+AddType application/manifest+json .webmanifest
+
 # edict2 distribution
 AddCharset EUC-JP .eucjp.txt
 AddCharset UTF-8 .utf8.txt
