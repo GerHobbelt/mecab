@@ -40,6 +40,20 @@ This webpage combines language technologies to suggest where to insert spaces,<b
     </div> -->
     <div id="managed"></div>
 
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => {
+            console.log(`Service Worker registered! Scope: ${registration.scope}`);
+          })
+          .catch(err => {
+            console.log(`Service Worker registration failed: ${err}`);
+          });
+      });
+    }
+    </script>
+
     <script type="module">
       import ModuleConsumer from './mecab.js';
       import {

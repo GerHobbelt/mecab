@@ -11,7 +11,14 @@
     "preact": "^10.0.0-alpha.2",
     "react": "^16.8.4",
     "unistore": "^3.4.1",
-    "wanakana": "^4.0.2"
+    "wanakana": "^4.0.2",
+    "workbox-sw": "^4.1.1",
+    "workbox-broadcast-cache-update": "^3.6.3",
+    "workbox-expiration": "^4.1.1",
+    "workbox-navigation-preload": "^4.1.1",
+    "workbox-precaching": "^4.1.1",
+    "workbox-routing": "^4.1.1",
+    "workbox-strategies": "^4.1.1"
   },
   "devDependencies": {
     "@pika/web": "^0.4.0"
@@ -22,7 +29,8 @@
       "preact",
       "preact/hooks",
       "unistore/full/preact.es.js",
-      "wanakana"
+      "wanakana",
+      "workbox-sw"
     ]
   },
   "scripts": {

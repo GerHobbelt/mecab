@@ -35,5 +35,8 @@ kanjidic2-lf.utf8.txt.gz
 
 test.html
 
+sw.js
+
 node_modules
 web_modules
+workbox_modules

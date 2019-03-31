@@ -73,6 +73,13 @@ npx @pika/web
 brew install xmlstarlet
 ./kanjidic2-parser.sh
 
+# optional: build service worker (for offline use)
+# ensure that workbox-cli is installed
+npm install --global workbox-cli
+mkdir -p workbox_modules
+cp node_modules/workbox-*/build/workbox-*{.dev,.prod,}.js workbox_modules
+npx workbox-cli injectManifest workbox-config.js
+
 # now view mecab-web/index.html
 ```
 
@@ -92,6 +99,9 @@ kanjidic2-lf.utf8.txt    # generated via ./kanjidic2-downloader.sh then ./kanjid
 src/**/*     # source code
 web_modules/**/*    # library dependencies, bundled by @pika/web
 node_modules/**/*   # (optional, for debug) the source maps of web_modules point here
+workbox_modules/**/*    # (optional, for offline support) libraries used by service worker
+manifest.webmanifest    # (optional, for offline support) progressive web application manifest
+sw.js        # (optional, for offline support) service worker
 ```
 
 See the `.htaccess` for how to set the correct MIME types for streaming compilation, and how to make use of pre-compressed files (instead of gzipping them each time they're requested).

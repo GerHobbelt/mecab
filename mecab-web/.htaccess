@@ -5,6 +5,10 @@
 Header set Cache-Control "max-age=172800, public"
 </filesMatch>
 
+<filesMatch "sw.js">
+Header set Cache-Control "no-cache, public"
+</filesMatch>
+
 # 10 mins for stuff I want to release updates to frequently
 # or things small enough that I don't mind a cache miss
 <filesMatch ".(js|html|css)$">
