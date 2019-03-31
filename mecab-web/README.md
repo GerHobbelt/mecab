@@ -73,12 +73,18 @@ npx @pika/web
 brew install xmlstarlet
 ./kanjidic2-parser.sh
 
-# optional: build service worker (for offline use)
-# ensure that workbox-cli is installed
-npm install --global workbox-cli
+##--START OPTIONAL (setup service worker, for offline use)
+# checks if you have workbox-cli, installs if you don't.
+npm ls -g --depth 0 workbox-cli > /dev/null 2>&1 || npm install -g workbox-cli
+
+# rather than having our webpack grab workbox from a CDN,
+# let's serve a workbox_modules folder
 mkdir -p workbox_modules
 cp node_modules/workbox-*/build/workbox-*{.dev,.prod,}.js workbox_modules
+
+# after you change any source code, run this to update the service worker's cache config
 npx workbox-cli injectManifest workbox-config.js
+##--END OPTIONAL
 
 # now view mecab-web/index.html
 ```
@@ -88,6 +94,7 @@ npx workbox-cli injectManifest workbox-config.js
 In total, you need to serve the following files:
 
 ```
+.htaccess
 index.html   # my helper page which combines various Japanese language technologies
 licenses.html
 mecab.js     # bootstraps WASM, exports functionality, handles lifecycle, preloads assets
@@ -110,4 +117,36 @@ Here's how to create .gz pre-compressed copies of each file:
 
 ```bash
 gzip -kf mecab.data mecab.wasm mecab.js edict2.utf8.txt enamdict.utf8.txt kanjidic2-lf.utf8.txt
+```
+
+## Preparing release
+
+The source code does not require any kind of bundling; it can be served as-is.
+
+That said: the _service worker_ does need complete and up-to-date knowledge of the application assets. For this reason, we do need to regenerate the service worker's manifest.
+
+```bash
+npx workbox-cli injectManifest workbox-config.js
+
+mkdir -p dist
+cp \
+.htaccess \
+index.html \
+LICENSE \
+licenses.html \
+manifest.webmanifest \
+sw.js \
+logo \
+src \
+web_modules/**/*.js \
+workbox_modules \
+mecab.data \
+mecab.wasm \
+mecab.js \
+edict2.utf8.txt \
+enamdict.utf8.txt \
+kanjidic2-lf.utf8.txt \
+dist/
+
+tar -zcvf dist.tar.gz dist/ 
 ```

@@ -1,5 +1,5 @@
 // npm install --global workbox-cli
-// workbox injectManifest workbox-config.js
+// npx workbox-cli injectManifest workbox-config.js
 
 // https://developers.google.com/web/tools/workbox/modules/workbox-webpack-plugin
 module.exports = {

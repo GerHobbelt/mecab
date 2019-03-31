@@ -40,3 +40,6 @@ sw.js
 node_modules
 web_modules
 workbox_modules
+
+dist
+dist.tar.gz
