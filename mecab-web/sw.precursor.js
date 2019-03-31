@@ -7,6 +7,7 @@ workbox.setConfig({
 })
 
 // fix typo in version 4.1.1
+workbox.loadModule('workbox-core');
 workbox.core._private.assert.isSWEnv = workbox.core._private.assert.isSwEnv;
 
 workbox.precaching.precacheAndRoute([])
