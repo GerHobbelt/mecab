@@ -342,20 +342,25 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
 
     const term = getSearchTerm(termResults.key);
 
+
+    // <h3>EDICT2<//>
+
     return html`
     <div>
-      <h2>Dictionary results for 
+      <div class="results-header">
+      Dictionary results for 
         '<${Word} classList="" mecabToken=${termResults.key} />'
         ${termResults.key.dictionaryForm
           && termResults.key.dictionaryForm !== termResults.key.token
           && ` (dictionary form: '${termResults.key.dictionaryForm}')`}
       <//>
+      <div class="jisho-lookup">
       Look up <a href=${
-        `https://jisho.org/search/${encodeURIComponent(term)}`
-      }>${term}<//> on Jisho.org
-      <h3>EDICT2<//>
+      `https://jisho.org/search/${encodeURIComponent(term)}`
+      } target="_blank">${term}<//> on Jisho.org
+      <//>
       ${termResults.value.edict2.map(renderEdictResult)}
-      <h3>ENAMDICT<//>
+      <h4 class="names-section">Names<//>
       ${termResults.value.enamdict.map(renderEnamdictResult)}
     <//>
     `;
