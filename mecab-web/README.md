@@ -99,5 +99,5 @@ See the `.htaccess` for how to set the correct MIME types for streaming compilat
 Here's how to create .gz pre-compressed copies of each file:
 
 ```bash
-gzip -kf mecab.data mecab.wasm mecab.js edict2.utf8.txt enamdict.utf8.txt kanjidic2-lf.txt
+gzip -kf mecab.data mecab.wasm mecab.js edict2.utf8.txt enamdict.utf8.txt kanjidic2-lf.utf8.txt
 ```
