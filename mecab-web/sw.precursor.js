@@ -6,8 +6,11 @@ workbox.setConfig({
 	modulePathPrefix: './workbox_modules/',
 })
 
-// fix typo in version 4.1.1
-workbox.loadModule('workbox-core');
-workbox.core._private.assert.isSWEnv = workbox.core._private.assert.isSwEnv;
+// fix for Chrome Desktop what seems to be a typo in workbox 4.1.1
+if ("localhost" === self.location.hostname) {
+	if (!workbox.core._private.assert.isSWEnv) {
+		workbox.core._private.assert.isSWEnv = workbox.core._private.assert.isSwEnv;
+	}
+}
 
 workbox.precaching.precacheAndRoute([])

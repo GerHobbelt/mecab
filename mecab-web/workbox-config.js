@@ -8,11 +8,13 @@ module.exports = {
     "**/*.{js,utf8.txt,html,data,wasm,css}"
   ],
   "globIgnores": [
+  	"dist/**/*",
   	"node_modules/**/*",
   	"test.html",
   	"edict2-indexer.js",
   	"sw.js",
   	"sw.precursor.js",
+  	"workbox-config.js",
   	"src/tokenizer/unused.js"
   ],
   "swDest": "sw.js",
