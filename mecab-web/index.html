@@ -62,15 +62,18 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       } from './src/index.js';
       const [store, actions] = initStore();
 
+      const edict2 = fetch('edict2.utf8.txt')
+      .then(response => response.text());
+      const enamdict = fetch('enamdict.utf8.txt')
+      .then(response => response.text());
+      const kanjidic2 = fetch('kanjidic2-lf.utf8.txt')
+      .then(response => response.text());
+
       initApplication({
         dictionaryTextPromises: {
-          edict2: fetch('edict2.utf8.txt')
-          .then(response => response.text()),
-          enamdict: fetch('enamdict.utf8.txt')
-          .then(response => response.text()),
-          kanjidic2: fetch('kanjidic2-lf.utf8.txt')
-          .then(response => response.text())
-          .then(text => window.kanjidic = text),
+          edict2,
+          enamdict,
+          kanjidic2,
         },
         store,
         actions,

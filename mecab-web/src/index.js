@@ -524,6 +524,7 @@ function bindParser(mecabCallbacks, mecabStructures) {
 }
 
 function initApplication({
+  tokenizer,
   dictionaryTextPromises,
   store,
   actions,

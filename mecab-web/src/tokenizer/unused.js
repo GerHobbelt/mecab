@@ -151,3 +151,16 @@ function toSubtokensWithKanjiReadings(token, readingHiragana) {
     ];
   }, [[], matches.slice(1)])[0];
 }
+
+/** This looks pretty cool. I don't remember when I stopped using it, 
+but seems to be related to whitespace splicing. */
+function splitAtIndices(str, indices) {
+  return [...indices, str.length].reduce((accumulator, splitIx) => {
+    const [remainingStr, startIx, splits] = accumulator;
+    return [
+      remainingStr.substring(splitIx-startIx),
+      splitIx,
+      [...splits, remainingStr.substring(0, splitIx-startIx)],
+    ]
+  }, [str, 0, []])[2];
+}
