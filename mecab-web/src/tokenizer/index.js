@@ -235,19 +235,36 @@ export class Mecab {
     structures: {
       tagger,
     },
+  }) {
+    this.mecab_sparse_tostr = mecab_sparse_tostr;
+    this.tagger = tagger;
+  }
+
+  query(sentence) {
+    return this.mecab_sparse_tostr(this.tagger, sentence);
+  }
+}
+
+export class MecabOutputParser {
+  constructor({
     config = {
       endOfSentence = 'EOS\n',
     },
     escapeRegExp,
   }) {
-    this.mecab_sparse_tostr = mecab_sparse_tostr;
-    this.tagger = tagger;
     this.endOfSentence = endOfSentence;
     this.escapeRegExp = escapeRegExp;
   }
 
-  query(sentence) {
-    return this.mecab_sparse_tostr(this.tagger, sentence);
+  parse(mecabOutput) {
+    const mecabTokens = this._toMecabTokens(mecabOutput);
+    return mecabTokens;
+  }
+
+  /** Decide our preference / fallback */
+  getRecommendedSearchTerm(mecabToken) {
+    const { token, readingHiragana, dictionaryForm } = mecabToken;
+    return dictionaryForm || token;
   }
 
   _toMecabTokens(mecabOutput) {
@@ -293,13 +310,6 @@ export class Mecab {
       }
     });
   }
-
-  tokenize(sentence) {
-    const mecabOutput = this.query(sentence);
-    const mecabTokens = this._toMecabTokens(mecabOutput);
-    return mecabTokens;
-  }
-
 }
 
 export class MecabWhitespaceInterposer {
@@ -438,41 +448,24 @@ export class MecabTokenEnricher {
   }
 }
 
-export class MecabWithEnrichers {
+export class MecabPipeline {
   constructor({
     mecab,
+    mecabOutputParser,
     tokenEnricher,
     whitespaceInterposer,
   }) {
+    this.mecabOutputParser = mecabOutputParser;
     this.tokenEnricher = tokenEnricher;
     this.whitespaceInterposer = whitespaceInterposer;
   }
 
   tokenize(sentence) {
-    const nominalTokens = this.mecab.tokenize(sentence);
+    const mecabOutput = this.mecab.query(sentence)
+    const nominalTokens = this.mecabOutputParser.parse(mecabOutput);
     const enrichedTokens = this.tokenEnricher.getEnriched(nominalTokens);
     const withWhitespace = this.whitespaceInterposer.withWhitespacesSplicedBackIn(enrichedTokens, sentence);
     return withWhitespace;
-  }
-}
-
-export class Edict2 {
-  constructor({
-    text,
-  }) {
-    this.text = text;
-  }
-}
-
-export class Dictionaries {
-  constructor({
-    edict2,
-    enamdict,
-    kanjidic2,
-  }) {
-    this.edict2 = edict2;
-    this.enamdict = enamdict;
-    this.kanjidic2 = kanjidic2;
   }
 }
 

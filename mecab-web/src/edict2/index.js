@@ -239,88 +239,122 @@ function getMostRelevantHeadwordReadingCombination(
   return result.proposed;
 }
 
-function parseEdictLine(
-  kanjidic2Lookup,
-  relevantHeadwordReadingCombinationGetter,
-  glossParser,
-  line,
-  ) {
-  // console.log(line);
-  const [indexSection, meaningSection] = line.split('/', 2);
-  const [headwordSection, readingSection] = indexSection.split(' ', 2);
-  
-  const headwords = parseEntrySection(headwordSection);
-
-  let readings = [];
-  const readingSectionInner = /^\[(.*)\]$/.exec(readingSection);
-  if (readingSectionInner && readingSectionInner.length > 1) {
-    readings = parseEntrySection(readingSectionInner[1]);
+export class Edict2Like {
+  constructor({
+    text,
+    regExpEscape,
+  }) {
+    this.text = text;
+    this.regExpEscape = regExpEscape;
   }
 
-  const headwordReadingCombinations = headwordReadingCombinationsSorted(
-    groupHeadwordReadingCombinations(
-      getHeadwordReadingCombinations(
-        kanjidic2Lookup,
-        headwords,
-        readings)));
+  _buildRegex(term) {
+    return new RegExp(
+    `^(.*(^|[\\[;])${
+      regExpEscape(term)
+    }[\\]\\(; ].*)$`, 'mg');
+  }
 
-  const bestHeadwordReadingCombination
-  = relevantHeadwordReadingCombinationGetter(headwordReadingCombinations);
+  lookup(term) {
+    const regexp = this._buildRegex(term);
+    return this.text.match(regexp) || [];
+  }
+}
 
-  return {
+export class Edict2LikeParser {
+  constructor({
+    kanjidic2,
+    relevantHeadwordReadingCombinationGetter,
+    glossParser,
+  }) {
+    this.kanjidic2 = kanjidic2;
+    this.relevantHeadwordReadingCombinationGetter = relevantHeadwordReadingCombinationGetter;
+    this.glossParser = glossParser;
+  }
+
+  parseEdictLine(
     line,
-    headwords,
-    readings,
-    headwordReadingCombinations,
-    bestHeadwordReadingCombination,
-    meaning: glossParser(meaningSection),
-  };
+    ) {
+    // console.log(line);
+    const [indexSection, meaningSection] = line.split('/', 2);
+    const [headwordSection, readingSection] = indexSection.split(' ', 2);
+    
+    const headwords = parseEntrySection(headwordSection);
+
+    let readings = [];
+    const readingSectionInner = /^\[(.*)\]$/.exec(readingSection);
+    if (readingSectionInner && readingSectionInner.length > 1) {
+      readings = parseEntrySection(readingSectionInner[1]);
+    }
+
+    const headwordReadingCombinations = headwordReadingCombinationsSorted(
+      groupHeadwordReadingCombinations(
+        getHeadwordReadingCombinations(
+          kanjidic2Lookup,
+          headwords,
+          readings)));
+
+    const bestHeadwordReadingCombination
+    = this.relevantHeadwordReadingCombinationGetter(headwordReadingCombinations);
+
+    return {
+      line,
+      headwords,
+      readings,
+      headwordReadingCombinations,
+      bestHeadwordReadingCombination,
+      meaning: glossParser(meaningSection),
+    };
+  }
 }
 
-/** @author bobince
-  * @see https://stackoverflow.com/a/3561711/5257399 */
-function regExpEscape(s) {
-    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
+export class Dictionaries {
+  constructor({
+    mecabOutputParser: { getRecommendedSearchTerm, },
+    edict2: {
+      edict2Like,
+      parser,
+    },
+    enamdict: {
+      edict2Like,
+      parser,
+    },
+    kanjidic2,
+  }) {
+    this.getRecommendedSearchTerm = getRecommendedSearchTerm;
+    this.edict2 = edict2;
+    this.enamdict = enamdict;
+    this.kanjidic2 = kanjidic2;
+  }
 
-/** Decide our preference / fallback */
-function getSearchTerm(mecabToken) {
-  const { token, readingHiragana, dictionaryForm } = mecabToken;
-  return dictionaryForm || token;
-}
+  lookup([kanjidic2Lookup], mecabToken) {
+    const term = getRecommendedSearchTerm(mecabToken);
+    const edict2Matches = this.edict2.edict2Like.lookup(term);
+    const enamDictMatches = this.enamdict.edict2Like.lookup(term);
 
-function edictLookup([edict2Text, enamdictText, kanjidic2Lookup], mecabToken) {
-  const term = getSearchTerm(mecabToken);
-  // console.log(mecabToken)
-	const regexp = new RegExp(
-  `^(.*(^|[\\[;])${
-    regExpEscape(term)
-  }[\\]\\(; ].*)$`, 'mg');
-  const edict2Matches = (edict2Text.match(regexp) || []);
-  const enamDictMatches = (enamdictText.match(regexp) || []);
+    const relevantHeadwordReadingCombinationGetter
+    = getMostRelevantHeadwordReadingCombination.bind(null, mecabToken)
 
-  const relevantHeadwordReadingCombinationGetter
-  = getMostRelevantHeadwordReadingCombination.bind(null, mecabToken)
-
-  return {
-    edict2: sortByRelevance(
-      classifyRelevance(
-        mecabToken,
-        edict2Matches.map(
-          parseEdictLine.bind(
-            null,
-            kanjidic2Lookup,
-            relevantHeadwordReadingCombinationGetter,
-            parseEdictMeaningSection)))),
-    enamdict: sortByRelevance(
-      classifyRelevance(
-        mecabToken,
-        enamDictMatches.map(
-          parseEdictLine.bind(
-            null,
-            kanjidic2Lookup,
-            relevantHeadwordReadingCombinationGetter,
-            parseEnamdictMeaningSection)))),
+    return {
+      edict2: sortByRelevance(
+        classifyRelevance(
+          mecabToken,
+          edict2Matches.map(
+            parseEdictLine.bind(
+              null,
+              kanjidic2Lookup,
+              relevantHeadwordReadingCombinationGetter,
+              parseEdictMeaningSection)))),
+      enamdict: sortByRelevance(
+        classifyRelevance(
+          mecabToken,
+          enamDictMatches.map(
+            parseEdictLine.bind(
+              null,
+              kanjidic2Lookup,
+              relevantHeadwordReadingCombinationGetter,
+              parseEnamdictMeaningSection)))),
+    }
   }
 }
 
