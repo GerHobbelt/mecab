@@ -1,4 +1,4 @@
-export class Kanjidic2 {
+export class Kanjidic2Matcher {
   constructor({
     kanjidic2Text,
     regExpEscape,
@@ -7,14 +7,16 @@ export class Kanjidic2 {
     this.regExpEscape = regExpEscape;
   }
 
-  lookup(kanji) {
+  match(kanji) {
     const firstMatch = this.kanjidic2Text.match(new RegExp(`^${this.regExpEscape(kanji)}.*$`, 'm'));
     if (!firstMatch) {
       return undefined;
     }
     return firstMatch[0];
   }
+}
 
+export class Kanjidic2Parser {
   parse(line) {
     const [kanji, jlptLevel, rmgroupsSection, nanoriSection] = line.split('$');
     const nanoris = nanoriSection
@@ -69,5 +71,24 @@ export class Kanjidic2 {
       console.warn(`Multiple rmgroups (${rmgroups.length}) detected for kanji '${kanji}'. Reading first only.`)
     }
     return rmgroups[0];
+  }
+}
+
+export class Kanjidic2 {
+  constructor({
+    kanjidic2Matcher,
+    kanjidic2Parser,
+  }) {
+    this.kanjidic2Matcher = kanjidic2Matcher;
+    this.kanjidic2Parser = kanjidic2Parser;
+  }
+
+  lookup(kanji) {
+    const line = this.kanjidic2Matcher.match(kanji);
+    if (!line) {
+      return undefined;
+    }
+    const parsed = this.kanjidic2Parser.parse(line);
+    return parsed;
   }
 }
