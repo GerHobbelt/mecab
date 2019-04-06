@@ -1,14 +1,14 @@
 export class Kanjidic2Matcher {
   constructor({
     kanjidic2Text,
-    regExpEscape,
+    escapeRegExp,
   }) {
-    this.kanjidic2Text = kanjidic2Text;
-    this.regExpEscape = regExpEscape;
+    this._kanjidic2Text = kanjidic2Text;
+    this._escapeRegExp = escapeRegExp;
   }
 
   match(kanji) {
-    const firstMatch = this.kanjidic2Text.match(new RegExp(`^${this.regExpEscape(kanji)}.*$`, 'm'));
+    const firstMatch = this._kanjidic2Text.match(new RegExp(`^${this._escapeRegExp(kanji)}.*$`, 'm'));
     if (!firstMatch) {
       return undefined;
     }
@@ -79,16 +79,16 @@ export class Kanjidic2 {
     kanjidic2Matcher,
     kanjidic2Parser,
   }) {
-    this.kanjidic2Matcher = kanjidic2Matcher;
-    this.kanjidic2Parser = kanjidic2Parser;
+    this._kanjidic2Matcher = kanjidic2Matcher;
+    this._kanjidic2Parser = kanjidic2Parser;
   }
 
   lookup(kanji) {
-    const line = this.kanjidic2Matcher.match(kanji);
+    const line = this._kanjidic2Matcher.match(kanji);
     if (!line) {
       return undefined;
     }
-    const parsed = this.kanjidic2Parser.parse(line);
+    const parsed = this._kanjidic2Parser.parse(line);
     return parsed;
   }
 }
