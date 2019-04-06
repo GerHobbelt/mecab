@@ -1,3 +1,11 @@
+export class SearchTermRecommender {
+  /** Decide our preference / fallback */
+  getRecommendedSearchTerm(mecabToken) {
+    const { token, readingHiragana, dictionaryForm } = mecabToken;
+    return dictionaryForm || token;
+  }
+}
+
 export class MecabOutputParser {
   constructor({
     config = {
@@ -5,8 +13,8 @@ export class MecabOutputParser {
     },
     escapeRegExp,
   }) {
-    this.endOfSentence = endOfSentence;
-    this.escapeRegExp = escapeRegExp;
+    this._endOfSentence = endOfSentence;
+    this._escapeRegExp = escapeRegExp;
   }
 
   parse(mecabOutput) {
@@ -14,17 +22,11 @@ export class MecabOutputParser {
     return mecabTokens;
   }
 
-  /** Decide our preference / fallback */
-  getRecommendedSearchTerm(mecabToken) {
-    const { token, readingHiragana, dictionaryForm } = mecabToken;
-    return dictionaryForm || token;
-  }
-
   _toMecabTokens(mecabOutput) {
     return mecabOutput.replace(
       new RegExp(`${
-        this.escapeRegExp(
-          this.endOfSentence)}$`),
+        this._escapeRegExp(
+          this._endOfSentence)}$`),
       '')
     .split('\n')
     .filter(x => x)

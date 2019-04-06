@@ -3,16 +3,16 @@ export class MecabTokenEnricher {
     wanakana: { toHiragana },
     furiganaFitter,
   }) {
-    this.toHiragana = toHiragana;
-    this.furiganaFitter = furiganaFitter;
+    this._toHiragana = toHiragana;
+    this._furiganaFitter = furiganaFitter;
   }
 
   _getHiraganaReading(mecabToken) {
-    return this.toHiragana(mecabToken.reading, { passRomaji: false });
+    return this._toHiragana(mecabToken.reading, { passRomaji: false });
   }
 
   _getSubtokens(readingHiragana, { token, partOfSpeech }) {
-    return this.furiganaFitter.fitFurigana(
+    return this._furiganaFitter.fitFurigana(
       token,
       readingHiragana,
       partOfSpeech === '固有名詞' // if proper noun, treat as name
@@ -20,7 +20,7 @@ export class MecabTokenEnricher {
   }
 
   _getImprovedToken(mecabToken) {
-    const readingHiragana = this.toHiragana(mecabToken.reading, { passRomaji: false });
+    const readingHiragana = this._toHiragana(mecabToken.reading, { passRomaji: false });
     return {
       ...mecabToken,
       readingHiragana,

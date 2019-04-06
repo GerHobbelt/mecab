@@ -39,7 +39,13 @@ import {
 } from './edict2/index.js';
 
 import {
+  Mecab,
+  MecabContext,
   MecabOutputParser,
+  SearchTermRecommender,
+  MecabTokenEnricher,
+  MecabWhitespaceInterposer,
+  MecabPipeline,
 } from './mecab/index.js';
 
 import { escapeRegExp, } from './util/index.js';
@@ -51,34 +57,68 @@ import {
   Kanjidic2,
 } from './kanjidic2/index.js';
 
-import { tokenize } from './web_modules/wanakana.js';
+import { tokenize, toHiragana, } from './web_modules/wanakana.js';
 
-export class DictionariesFactory {
-	constructor({
-
-	}) {
-	}
-
-	construct({
-		edict2Text,
-		enamdictText,
-		kanjidic2Text,
-    mecabConfig = {
-      endOfSentence = 'EOS\n',
-    },
-	}) {
-    const kanjidic2 = new Kanjidic2({
+export class Kanjidic2Factory {
+  construct({
+    kanjidic2Text,
+  }) {
+    return new Kanjidic2({
       kanjidic2Matcher: new Kanjidic2Matcher({
         kanjidic2Text,
         escapeRegExp,
       }),
       kanjidic2Parser: new Kanjidic2Parser(),
+    })
+  }
+}
+
+export class FuriganaFitterFactory {
+  construct({
+    kanjidic2,
+    mecabConfig: {
+      endOfSentence = 'EOS\n',
+    },
+  }) {
+    const mecabOutputParser = new MecabOutputParser({
+      escapeRegExp,
+      config: mecabConfig,
     });
     const furiganaFitter = new FuriganaFitter({
       kanjidic2,
       wanakana: { tokenize },
       escapeRegExp,
     });
+  }
+}
+
+export class MecabPipelineFactory {
+  construct({
+    mecab,
+  }) {
+    const mecabOutputParser = new MecabOutputParser({
+      escapeRegExp,
+      config: mecab.config,
+    });
+    return new MecabPipeline({
+      mecab,
+      mecabOutputParser,
+      tokenEnricher: new MecabTokenEnricher({
+        wanakana: { toHiragana, },
+        furiganaFitter,
+      }),
+      whitespaceInterposer: new MecabWhitespaceInterposer(),
+    })
+  }
+}
+
+export class DictionariesFactory {
+	construct({
+		edict2Text,
+		enamdictText,
+    furiganaFitter,
+	}) {
+    const searchTermRecommender = new SearchTermRecommender();
     const headwordReadingPipelineFactory
     = new HeadwordReadingPipelineFactory({
       parsedEntrySorter: new HeadwordReadingSorter(),
@@ -89,16 +129,14 @@ export class DictionariesFactory {
     const parsedEntryRelevancePipelineFactory
     = new ParsedEntryRelevancePipelineFactory({
       relevanceClassifier: new ParsedEntryRelevanceClassifier({
-        mecabOutputParser: new MecabOutputParser({
-          escapeRegExp,
-        }),
+        searchTermRecommender,
       }),
       relevanceSorter: new ParsedEntrySorter(),
     });
-		return new Dictionaries({
-      mecabOutputParser,
-			edict2: {
-				matchPipelineFactory: new MatchPipelineFactory(
+    return new Dictionaries({
+      searchTermRecommender,
+      edict2: {
+        matchPipelineFactory: new MatchPipelineFactory(
           new Edict2LikeParser({
             glossParser: new Edict2GlossParser(),
           })),
@@ -108,8 +146,8 @@ export class DictionariesFactory {
             escapeRegExp,
           }),
         }),
-			},
-			enamdict: {
+      },
+      enamdict: {
         matchPipelineFactory: new MatchPipelineFactory(
           new Edict2LikeParser({
             glossParser: new EnamdictGlossParser(),
@@ -120,8 +158,8 @@ export class DictionariesFactory {
             escapeRegExp,
           }),
         }),
-			},
+      },
       headwordReadingPipelineFactory,
-		});
+    });
 	}
 }
