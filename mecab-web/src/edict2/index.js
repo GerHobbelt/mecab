@@ -1,126 +1,196 @@
 import edictAbbr from './abbrev.js';
 import { toSubtokensWithKanjiReadings } from '../tokenizer/index.js'
 
-function parseEdictMeaningSection(meaningSection) {
-	// console.log(meaningSection);
-  return meaningSection;
-}
-
-function parseEnamdictMeaningSection(meaningSection) {
-  return meaningSection;
-}
-
-function classifyRelevance(mecabToken, results) {
-  const { token, readingHiragana, dictionaryForm } = mecabToken;
-  const term = getSearchTerm(mecabToken);
-  // console.warn(term);
-  // console.warn(results);
-  return results.map((result) => ({
-    relevance: {
-      queryMatchesHeadword: result.headwords.reduce((acc, curr) => {
-        return acc || curr.form === term;
-      }, false),
-      // queryMatchesPriorityHeadword: result.headwords.reduce((acc, curr) => {
-      //   return acc || (curr.tags.priorityEntry && curr.form === term);
-      // }, false),
-      queryMatchesReading: result.readings.reduce((acc, curr) => {
-        return acc || curr.form === readingHiragana;
-      }, false),
-      // queryMatchesPriorityReading: result.readings.reduce((acc, curr) => {
-      //   return acc || (curr.tags.priorityEntry && curr.form === readingHiragana);
-      // }, false),
-    },
-    result,
-  }));
-}
-
-function quantifyRelevance(relevance) {
-  let merits = 0;
-  if (relevance.queryMatchesHeadword) {
-    merits++;
+export class Edict2MeaningSectionParser {
+  parse(meaningSection) {
+    return meaningSection;
   }
-  // if (relevance.queryMatchesPriorityHeadword) {
-  //   merits++;
-  // }
-  if (relevance.queryMatchesReading) {
-    merits++;
-  }
-  // if (relevance.queryMatchesPriorityReading) {
-  //   merits++;
-  // }
-  // relevance.merits = merits;
-  return merits;
 }
 
-function sortByRelevance(results) {
-  return results.sort((left, right) => {
-    const leftMerits = quantifyRelevance(left.relevance);
-    const rightMerits = quantifyRelevance(right.relevance);
-    return rightMerits - leftMerits;
-  });
+export class EnamdictMeaningSectionParser {
+  parse(meaningSection) {
+    return meaningSection;
+  }
 }
 
-function classifyRelevanceHeadwordReadingCombination(
-  mecabToken,
-  { headword, readingTuple },
-  ) {
-  const { token, readingHiragana, dictionaryForm } = mecabToken;
-  const { reading } = readingTuple;
-  const term = getSearchTerm(mecabToken);
-  let relevance = 0;
-  if (headword === term) {
-    relevance++;
+export class Edict2LikeParsedEntrySorter {
+  quantifyRelevance(relevance) {
+    let merits = 0;
+    if (relevance.queryMatchesHeadword) {
+      merits++;
+    }
+    // if (relevance.queryMatchesPriorityHeadword) {
+    //   merits++;
+    // }
+    if (relevance.queryMatchesReading) {
+      merits++;
+    }
+    // if (relevance.queryMatchesPriorityReading) {
+    //   merits++;
+    // }
+    // relevance.merits = merits;
+    return merits;
   }
-  if (headword === readingHiragana) {
-    relevance++;
+
+  sortByRelevance(results) {
+    return results.sort((left, right) => {
+      const leftMerits = this.quantifyRelevance(left.relevance);
+      const rightMerits = this.quantifyRelevance(right.relevance);
+      return rightMerits - leftMerits;
+    });
   }
-  if (reading === readingHiragana) {
-    relevance++;
-  }
-  return relevance;
 }
 
-function getMostRelevantHeadwordReadingCombination(
-  mecabToken,
-  headwordReadingsTuples,
-  ) {
-  const term = getSearchTerm(mecabToken);
-  const result = headwordReadingsTuples
-  .reduce((headwordTupleAcc, { headword, readingTuples }) => {
-    const proposed = readingTuples.reduce((readingTupleAcc, readingTuple) => {
-      const proposed = {
-        headword,
-        readingTuple,
-      };
-      const relevance = classifyRelevanceHeadwordReadingCombination(
-        mecabToken,
+export class Edict2LikeParsedEntryRelevanceClassifier {
+  constructor({
+    mecabOutputParser: { getRecommendedSearchTerm, },
+  }) {
+    this.getRecommendedSearchTerm = getRecommendedSearchTerm;
+  }
+
+  classifyRelevance(mecabToken, results) {
+    const { token, readingHiragana, dictionaryForm } = mecabToken;
+    const term = this.getRecommendedSearchTerm.getSearchTerm(mecabToken);
+    // console.warn(term);
+    // console.warn(results);
+    return results.map((result) => ({
+      relevance: {
+        queryMatchesHeadword: result.headwords.reduce((acc, curr) => {
+          return acc || curr.form === term;
+        }, false),
+        // queryMatchesPriorityHeadword: result.headwords.reduce((acc, curr) => {
+        //   return acc || (curr.tags.priorityEntry && curr.form === term);
+        // }, false),
+        queryMatchesReading: result.readings.reduce((acc, curr) => {
+          return acc || curr.form === readingHiragana;
+        }, false),
+        // queryMatchesPriorityReading: result.readings.reduce((acc, curr) => {
+        //   return acc || (curr.tags.priorityEntry && curr.form === readingHiragana);
+        // }, false),
+      },
+      result,
+    }));
+  }
+}
+
+export class Edict2LikeParsedEntryRelevancePipelineFactory {
+  constructor({
+    relevanceClassifier,
+    relevanceSorter,
+  }) {
+    this._relevanceClassifier = relevanceClassifier;
+    this._relevanceSorter = relevanceSorter;
+  }
+
+  construct(mecabToken) {
+    return new Edict2LikeParsedEntryRelevancePipeline({
+      relevanceClassifier: this._relevanceClassifier,
+      relevanceSorter: this._relevanceSorter,
+      mecabToken,
+    });
+  }
+}
+
+export class Edict2LikeParsedEntryRelevancePipeline {
+  constructor({
+    mecabToken,
+    relevanceClassifier,
+    relevanceSorter,
+  }) {
+    this._relevanceClassifier = relevanceClassifier;
+    this._relevanceSorter = relevanceSorter;
+    this._mecabToken = mecabToken;
+  }
+
+  withRelevanceInfo(parsedEntry) {
+    const withRelevanceClassified = this._relevanceClassifier.classifyRelevance(this._mecabToken, parsedEntry);
+    const sortedByRelevance = this._relevanceSorter.sortByRelevance(withRelevanceClassified);
+    return sortedByRelevance;
+  }
+}
+
+export class ReadingRankerFactory {
+  constructor({
+    mecabOutputParser: { getRecommendedSearchTerm, },
+  }) {
+    this._mecabOutputParser = mecabOutputParser;
+  }
+
+  construct(mecabToken) {
+    return new ReadingRanker({
+      mecabOutputParser: this._mecabOutputParser,
+      mecabToken: this._mecabToken,
+    });
+  }
+}
+
+export class ReadingRanker {
+  constructor({
+    mecabOutputParser: { getRecommendedSearchTerm, },
+    mecabToken,
+  }) {
+    this._mecabToken = mecabToken;
+    this._getRecommendedSearchTerm = getRecommendedSearchTerm;
+  }
+
+  _classifyRelevanceHeadwordReadingCombination(
+    { headword, readingTuple },
+    ) {
+    const { token, readingHiragana, dictionaryForm } = this._mecabToken;
+    const { reading } = readingTuple;
+    const term = this._getRecommendedSearchTerm(this._mecabToken);
+    let relevance = 0;
+    if (headword === term) {
+      relevance++;
+    }
+    if (headword === readingHiragana) {
+      relevance++;
+    }
+    if (reading === readingHiragana) {
+      relevance++;
+    }
+    return relevance;
+  }
+
+  getMostRelevantHeadwordReadingCombination(headwordReadingsTuples) {
+    const term = this._getRecommendedSearchTerm(this._mecabToken);
+    const result = headwordReadingsTuples
+    .reduce((headwordTupleAcc, { headword, readingTuples }) => {
+      const proposed = readingTuples.reduce((readingTupleAcc, readingTuple) => {
+        const proposed = {
+          headword,
+          readingTuple,
+        };
+        const relevance = this._classifyRelevanceHeadwordReadingCombination(
+          this._mecabToken,
+          proposed);
+        if (relevance > readingTupleAcc.relevance) {
+          return {
+            relevance,
+            proposed,
+          }
+        }
+        return readingTupleAcc;
+      }, {
+        relevance: -1,
+        proposed: undefined,
+      }).proposed;
+      const relevance = this._classifyRelevanceHeadwordReadingCombination(
+        this._mecabToken,
         proposed);
-      if (relevance > readingTupleAcc.relevance) {
+      if (relevance > headwordTupleAcc.relevance) {
         return {
           relevance,
           proposed,
         }
       }
-      return readingTupleAcc;
+      return headwordTupleAcc;
     }, {
       relevance: -1,
       proposed: undefined,
-    }).proposed;
-    const relevance = classifyRelevanceHeadwordReadingCombination(
-      mecabToken,
-      proposed);
-    if (relevance > headwordTupleAcc.relevance) {
-      return {
-        relevance,
-        proposed,
-      }
-    }
-    return headwordTupleAcc;
-  }, {
-    relevance: -1,
-    proposed: undefined,
-  });
-  return result.proposed;
+    });
+    return result.proposed;
+  }
 }
 
 export class Edict2LikeMatcher {
@@ -145,13 +215,28 @@ export class Edict2LikeMatcher {
   }
 }
 
+// export class Edict2LikeParserFactory {
+//   constructor({
+//     readingRankerFactory,
+//     glossParser,
+//   }) {
+//     this._readingRankerFactory = readingRankerFactory;
+//     this._glossParser = glossParser;
+//   }
+
+//   construct(mecabToken) {
+//     return new Edict2LikeParser({
+//       readingRanker: this._readingRankerFactory.construct(mecabToken),
+//       glossParser: this._glossParser,
+//     })
+//   }
+// }
+
 export class Edict2LikeParser {
   constructor({
-    relevantHeadwordReadingCombinationGetter,
     glossParser,
   }) {
-    this.relevantHeadwordReadingCombinationGetter = relevantHeadwordReadingCombinationGetter;
-    this.glossParser = glossParser;
+    this._glossParser = glossParser;
   }
 
   _parseTags(tagsSection) {
@@ -211,27 +296,31 @@ export class Edict2LikeParser {
       line,
       headwords,
       readings,
-      meaning: glossParser(meaningSection),
+      meaning: this._glossParser(meaningSection),
     };
   }
 }
 
 export class Edict2LikeParsedEntryEnricher {
   constructor({
-
+    readingRanker,
+    parsedEntrySorter,
+    parsedEntryReadingsResolver,
   }) {
-
+    this.readingRanker = readingRanker;
+    this.parsedEntrySorter = parsedEntrySorter;
+    this.parsedEntryReadingsResolver = parsedEntryReadingsResolver;
   }
 
   enrich(parsedEntry) {
-    const headwordReadingCombinations = headwordReadingCombinationsSorted(
-      groupHeadwordReadingCombinations(
-        getHeadwordReadingCombinations(
+    const headwordReadingCombinations = this.parsedEntrySorter.headwordReadingCombinationsSorted(
+      this.parsedEntrySorter.groupHeadwordReadingCombinations(
+        this.parsedEntryReadingsResolver.getHeadwordReadingCombinations(
           headwords,
           readings)));
 
     const bestHeadwordReadingCombination
-    = this.relevantHeadwordReadingCombinationGetter(headwordReadingCombinations);
+    = this.readingRanker.getMostRelevantHeadwordReadingCombination(headwordReadingCombinations);
 
     return {
       ...parsedEntry,
@@ -241,14 +330,28 @@ export class Edict2LikeParsedEntryEnricher {
   }
 }
 
+export class Edict2LikeParsedEntryReadingPipeline {
+  constructor({
+    parsedEntryEnricher,
+    parsedEntryReadingSorter,
+  }) {
+    this._parsedEntryEnricher = parsedEntryEnricher;
+    this._parsedEntryReadingSorter = parsedEntryReadingSorter;
+  }
+
+  withReadings(parsedEntry) {
+
+  }
+}
+
 export class Edict2LikeParsedEntryPipeline {
   constructor({
     parser,
-    parsedEntryEnricher,
-    parsedEntrySorter
+    readingPipeline,
+    relevancePipeline,
   }) {
-    this.parsedEntryEnricher = parsedEntryEnricher;
-    this.parsedEntrySorter = parsedEntrySorter;
+    this._parser = parser;
+    this._relevancePipeline = relevancePipeline;
   }
 
   parse(line) {
@@ -258,11 +361,9 @@ export class Edict2LikeParsedEntryPipeline {
 
 export class Edict2LikeParsedEntryReadingsResolver {
   constructor({
-    kanjidic2,
     furiganaFitter,
   }) {
-    this.kanjidic2 = kanjidic2;
-    this.furiganaFitter = furiganaFitter;
+    this._furiganaFitter = furiganaFitter;
   }
 
   /**
@@ -305,7 +406,7 @@ export class Edict2LikeParsedEntryReadingsResolver {
     .map(({ headword, reading }) => ({
       headword,
       reading,
-      subtokens: this.furiganaFitter.fitFurigana(
+      subtokens: this._furiganaFitter.fitFurigana(
         headword,
         reading,
         ),
@@ -313,7 +414,7 @@ export class Edict2LikeParsedEntryReadingsResolver {
   }
 }
 
-export class Edict2LikeParsedEntrySorter {
+export class Edict2LikeParsedEntryReadingSorter {
   groupHeadwordReadingCombinations(tuples) {
     return tuples.reduce((
       acc,
@@ -343,64 +444,42 @@ export class Edict2LikeParsedEntrySorter {
   }
 }
 
-export class Edict2Like {
-  constructor({
-    matcher,
-    parser,
-  }) {
-    this.matcher = matcher;
-    this.parser = parser;
-  }
-
-  lookup(term) {
-    
-  }
-}
-
 export class Dictionaries {
   constructor({
     mecabOutputParser: { getRecommendedSearchTerm, },
     edict2: {
+      // parserFactory,
       parser,
       matcher,
     },
     enamdict: {
+      // parserFactory,
       parser,
       matcher,
     },
-    kanjidic2,
+    parsedEntryRelevancePipelineFactory,
   }) {
-    this.getRecommendedSearchTerm = getRecommendedSearchTerm;
-    this.edict2 = edict2;
-    this.enamdict = enamdict;
-    this.kanjidic2 = kanjidic2;
+    this._getRecommendedSearchTerm = getRecommendedSearchTerm;
+    this._parsedEntryRelevancePipeline = parsedEntryRelevancePipeline;
+    this._edict2 = edict2;
+    this._enamdict = enamdict;
   }
 
   lookup(mecabToken) {
-    const term = this.getRecommendedSearchTerm(mecabToken);
-    const edict2Matches = this.edict2.matcher.match(term);
-    const enamDictMatches = this.enamdict.matcher.match(term);
+    const term = this._getRecommendedSearchTerm(mecabToken);
+    const edict2Matches = this._edict2.matcher.match(term);
+    const enamDictMatches = this._enamdict.matcher.match(term);
 
-    const relevantHeadwordReadingCombinationGetter
-    = getMostRelevantHeadwordReadingCombination.bind(null, mecabToken)
+    // const edict2Parser = this._edict2.parserFactory.construct(mecabToken);
+    // const enamdict2Parser = this._enamdict.parserFactory.construct(mecabToken);
+
+    const parsedEntryRelevancePipeline = this._parsedEntryRelevancePipelineFactory.construct(mecabToken);
 
     return {
-      edict2: sortByRelevance(
-        classifyRelevance(
-          mecabToken,
-          edict2Matches.map((match) =>
-            this.edict2.parser.parse(
-              relevantHeadwordReadingCombinationGetter,
-              parseEdictMeaningSection,
-              match)))),
-      enamdict: sortByRelevance(
-        classifyRelevance(
-          mecabToken,
-          enamDictMatches.map((match) =>
-            this.enamdict.parser.parse(
-              relevantHeadwordReadingCombinationGetter,
-              parseEnamdictMeaningSection,
-              match)))),
+      edict2: parsedEntryRelevancePipeline.withRelevanceInfo(
+          edict2Matches.map((match) => this.edict2.parser.parse(match))),
+      enamdict: parsedEntryRelevancePipeline.withRelevanceInfo(
+          enamDictMatches.map((match) => this.enamdict2.parser.parse(match))),
     }
   }
 }
