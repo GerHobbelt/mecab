@@ -23,7 +23,6 @@ export class Edict2LikeDictionary {
     });
     const matchesPipeline = this._matchesPipelineFactory.construct({
       matchPipeline,
-      relevancePipeline,
     });
     return matchesPipeline;
   }

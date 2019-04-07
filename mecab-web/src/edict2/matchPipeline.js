@@ -46,7 +46,7 @@ export class MatchPipeline {
   }
 
   parse(line) {
-    const parsedEntry = this._parser.parse(line);
+    const parsedEntry = this._parser.parseEdictLine(line);
     const withHeadwordReadings = this._headwordReadingPipeline.withHeadwordReadings(parsedEntry);
     const withRelevanceInfo = this._relevancePipeline.withRelevanceInfo(withHeadwordReadings);
     return withRelevanceInfo;

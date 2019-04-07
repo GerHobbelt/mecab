@@ -13,18 +13,19 @@
 export class MatchesPipelineFactory {
   constructor({
     matcher,
+    parsedEntriesSorter,
   }) {
     this._matcher = matcher;
+    this._parsedEntriesSorter = parsedEntriesSorter;
   }
 
   construct({
-    relevancePipeline,
     matchPipeline,
   }) {
     return new MatchesPipeline({
       matcher: this._matcher,
+      parsedEntriesSorter: this._parsedEntriesSorter,
       matchPipeline,
-      relevancePipeline,
     })
   }
 }
@@ -33,17 +34,17 @@ export class MatchesPipeline {
   constructor({
     matcher,
     matchPipeline,
-    relevancePipeline,
+    parsedEntriesSorter,
   }) {
     this._matcher = matcher;
     this._matchPipeline = matchPipeline;
-    this._relevancePipeline = relevancePipeline;
+    this._parsedEntriesSorter = parsedEntriesSorter;
   }
 
   lookup(term) {
     const matches = this._matcher.match(term);
     const parsedEntries = matches.map((match) => this._matchPipeline.parse(match))
-    const withRelevanceInfo = this._relevancePipeline.withRelevanceInfo(parsedEntries);
+    const sorted = this._parsedEntriesSorter.sortByRelevance(parsedEntries);
     return parsedEntries;
   }
 }

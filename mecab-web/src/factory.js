@@ -14,7 +14,7 @@ import {
 
   ParsedEntryRelevancePipelineFactory,
   ParsedEntryRelevanceClassifier,
-  ParsedEntrySorter,
+  ParsedEntriesSorter,
 
   HeadwordReadingRankerFactory,
   HeadwordReadingPipelineFactory,
@@ -114,7 +114,6 @@ export class Edict2LikeDictionaryFactory {
         relevanceClassifier: new ParsedEntryRelevanceClassifier({
           searchTermRecommender,
         }),
-        relevanceSorter: new ParsedEntrySorter(),
       }),
       matchPipelineFactory: new MatchPipelineFactory({
         parser: new Edict2LikeParser({
@@ -126,6 +125,7 @@ export class Edict2LikeDictionaryFactory {
           text,
           escapeRegExp,
         }),
+        parsedEntrySorter: new ParsedEntriesSorter(),
       }),
     });
   }

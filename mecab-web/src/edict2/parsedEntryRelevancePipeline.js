@@ -1,5 +1,5 @@
-export class ParsedEntrySorter {
-  quantifyRelevance(relevance) {
+export class ParsedEntriesSorter {
+  _quantifyRelevance(relevance) {
     let merits = 0;
     if (relevance.queryMatchesHeadword) {
       merits++;
@@ -17,10 +17,10 @@ export class ParsedEntrySorter {
     return merits;
   }
 
-  sortByRelevance(results) {
-    return results.sort((left, right) => {
-      const leftMerits = this.quantifyRelevance(left.relevance);
-      const rightMerits = this.quantifyRelevance(right.relevance);
+  sortByRelevance(parsedEntries) {
+    return parsedEntries.sort((parsedEntryLeft, parsedEntryRight) => {
+      const leftMerits = this._quantifyRelevance(parsedEntryLeft.relevance);
+      const rightMerits = this._quantifyRelevance(parsedEntryRight.relevance);
       return rightMerits - leftMerits;
     });
   }
@@ -61,16 +61,13 @@ export class ParsedEntryRelevanceClassifier {
 export class ParsedEntryRelevancePipelineFactory {
   constructor({
     relevanceClassifier,
-    relevanceSorter,
   }) {
     this._relevanceClassifier = relevanceClassifier;
-    this._relevanceSorter = relevanceSorter;
   }
 
   construct(mecabToken) {
     return new ParsedEntryRelevancePipeline({
       relevanceClassifier: this._relevanceClassifier,
-      relevanceSorter: this._relevanceSorter,
       mecabToken,
     });
   }
@@ -80,16 +77,13 @@ export class ParsedEntryRelevancePipeline {
   constructor({
     mecabToken,
     relevanceClassifier,
-    relevanceSorter,
   }) {
     this._relevanceClassifier = relevanceClassifier;
-    this._relevanceSorter = relevanceSorter;
     this._mecabToken = mecabToken;
   }
 
   withRelevanceInfo(parsedEntry) {
     const withRelevanceClassified = this._relevanceClassifier.classifyRelevance(this._mecabToken, parsedEntry);
-    const sortedByRelevance = this._relevanceSorter.sortByRelevance(withRelevanceClassified);
-    return sortedByRelevance;
+    return withRelevanceClassified;
   }
 }

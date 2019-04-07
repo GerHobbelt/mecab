@@ -81,7 +81,7 @@ export class Edict2LikeParser {
 
   _parseEntrySection(section) {
     const entries = section.split(';');
-    return entries.map(this._parseEntry);
+    return entries.map(entry => this._parseEntry(entry));
   }
 
   parseEdictLine(line) {
@@ -101,7 +101,7 @@ export class Edict2LikeParser {
       line,
       headwords,
       readings,
-      meaning: this._glossParser(meaningSection),
+      meaning: this._glossParser.parse(meaningSection),
     };
   }
 }
