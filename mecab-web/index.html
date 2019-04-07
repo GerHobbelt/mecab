@@ -60,17 +60,103 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         initStore,
         initApplication,
       } from './src/index.js';
+      import {
+        MecabContext,
+      } from './src/mecab/index.js';
+      import {
+        Edict2GlossParser,
+        EnamdictGlossParser,
+      } from './src/edict2/index.js';
+      import {
+        Kanjidic2Factory,
+        FuriganaFitterFactory,
+        MecabPipelineFactory,
+        Edict2LikeDictionaryFactory,
+        DictionariesFactory,
+      } from './src/factory.js';
+      import { Deferred } from './src/util/index.js';
+      import { tokenize, toHiragana, } from './web_modules/wanakana.js';
+
       const [store, actions] = initStore();
 
+      const kanjidic2 = fetch('kanjidic2-lf.utf8.txt')
+      .then(response => response.text())
+      .then(kanjidic2Text => new Kanjidic2Factory()
+        .construct({
+          kanjidic2Text,
+        }));
+
+      const furiganaFitter = kanjidic2
+      .then(kanjidic2 => new FuriganaFitterFactory()
+        .construct({
+          kanjidic2,
+          wanakana: { tokenize, toHiragana, },
+        }));
+
+      const edict2Text = fetch('edict2.utf8.txt')
+      .then(response => response.text());
+      const edict2 = Promise.all([edict2Text, furiganaFitter])
+      .then(([text, furiganaFitter]) => new Edict2LikeDictionaryFactory()
+        .construct({
+          text,
+          glossParser: new Edict2GlossParser(),
+          furiganaFitter,
+        }));
+
+      const enamdictText = fetch('enamdict.utf8.txt')
+      .then(response => response.text());
+      const enamdict = Promise.all([enamdictText, furiganaFitter])
+      .then(([text, furiganaFitter]) => new Edict2LikeDictionaryFactory()
+        .construct({
+          text,
+          glossParser: new EnamdictGlossParser(),
+          furiganaFitter,
+        }));
+
+      const mecabDeferred = new Deferred();
+      const mecabContext = mecabDeferred.promise.then((callbacks) => {
+        return new MecabContext({
+          callbacks,
+        });
+      });
+
+      const dictionaries = Promise.all([edict2, enamdict])
+      .then(([edict2, enamdict]) => new DictionariesFactory()
+        .construct({
+          edict2,
+          enamdict,
+        }));
+
+      const mecabPipeline = Promise.all([mecabContext, furiganaFitter])
+      .then(([mecabContext, furiganaFitter]) => new MecabPipelineFactory()
+        .construct({
+          mecab: mecabContext.construct({
+            config: {},
+          }),
+          wanakana: { toHiragana, },
+          furiganaFitter,
+        }));
+
+      const languageTools = Promise.all([dictionaries, mecabPipeline, furiganaFitter])
+      .then(([dictionaries, mecabPipeline, furiganaFitter]) => ({
+          dictionaries,
+          mecabPipeline,
+          furiganaFitter,
+      }));
+
+      languageTools
+      .then(languageTools => {
+        console.log(languageTools);
+        Object.assign(window, { languageTools, });
+        return languageTools;
+      })
+      .then(languageTools => actions.setLanguageTools(languageTools));
+
       initApplication({
-        dictionaryTextPromises: {
-          edict2: fetch('edict2.utf8.txt')
-          .then(response => response.text()),
-          enamdict: fetch('enamdict.utf8.txt')
-          .then(response => response.text()),
-          kanjidic2: fetch('kanjidic2-lf.utf8.txt')
-          .then(response => response.text())
-          .then(text => window.kanjidic = text),
+        dictionaryLoadPromises: {
+          edict2,
+          enamdict,
+          kanjidic2,
         },
         store,
         actions,
@@ -79,39 +165,36 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       });
 
       store.subscribe(state => {
-        if (state.ready
-          && !state.parses.length
-          && state.initialQuery) {
-          // console.log(state.initialQuery);
-          const parsed = state.parse(state.kanjidic2Lookup, state.initialQuery);
-          // console.log(parsed);
-          actions.addParse(parsed);
-        }
-        if (!state.termResults.key
-          && state.dictionaryText
-          && state.dictionaryText.edict2
-          && state.dictionaryText.enamdict
-          && state.kanjidic2Lookup)
-        {
-          actions.chooseTerm({
-            token: '双子',
-          });
+        if (state.languageTools) {
+          const { mecabPipeline } = state.languageTools;
+          if (!state.parses.length
+            && state.initialQuery) {
+            // console.log(state.initialQuery);
+            const parsed = mecabPipeline.tokenize(state.initialQuery);
+            // console.log(parsed);
+            actions.addParse(parsed);
+          }
+          if (!state.termResults.key) {
+            actions.chooseTerm({
+              token: '双子',
+            });
+          }
         }
       });
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
-      const wrapped = {};
-      const toBeFreed = {
-        mecab_model_t: new Set(), // config
-        mecab_t: new Set(), // tagger
-        mecab_lattice_t: new Set(),
-      };
-      const currentPointers = {
-        tagger: undefined,
-        lattice: undefined,
-      }
+      // const wrapped = {};
+      // const toBeFreed = {
+      //   mecab_model_t: new Set(), // config
+      //   mecab_t: new Set(), // tagger
+      //   mecab_lattice_t: new Set(),
+      // };
+      // const currentPointers = {
+      //   tagger: undefined,
+      //   lattice: undefined,
+      // }
 
       const dicdir = '/naist-jdic';
 
@@ -148,6 +231,7 @@ dicdir = ${dicdir}
 `);
         }],
         postRun: [function() {
+          const wrapped = {};
           Object.assign(wrapped, {
             mecab_do: Module.cwrap('mecab_do2', 'number', ['string']),
             mecab_model_new2: Module.cwrap('mecab_model_new2', 'number', ['string']),
@@ -161,25 +245,28 @@ dicdir = ${dicdir}
 
           // we could probably skip the destroy since the world's ending anyway..
           Module.addOnExit(() => {
-            toBeFreed.mecab_t.forEach((p_mecab_t) => {
-              wrapped.mecab_destroy(p_mecab_t);
-            });
-            toBeFreed.mecab_model_t.forEach((p_mecab_model_t) => {
-              wrapped.mecab_model_destroy(p_mecab_model_t);
-            });
+            mecabContext.then((mecabContext) => mecabContext.free());
+            // toBeFreed.mecab_t.forEach((p_mecab_t) => {
+            //   wrapped.mecab_destroy(p_mecab_t);
+            // });
+            // toBeFreed.mecab_model_t.forEach((p_mecab_model_t) => {
+            //   wrapped.mecab_model_destroy(p_mecab_model_t);
+            // });
           });
+
+          mecabDeferred.resolve(wrapped);
 
           // const args = document.getElementById('args').value;
           // const args = '-o output.txt input.txt';
-          const args = '';
-          const p_mecab_model = wrapped.mecab_model_new2(args);
-          toBeFreed.mecab_model_t.add(p_mecab_model);
+          // const args = '';
+          // const p_mecab_model = wrapped.mecab_model_new2(args);
+          // toBeFreed.mecab_model_t.add(p_mecab_model);
 
-          const p_tagger = wrapped.mecab_model_new_tagger(p_mecab_model);
-          toBeFreed.mecab_t.add(p_tagger);
+          // const p_tagger = wrapped.mecab_model_new_tagger(p_mecab_model);
+          // toBeFreed.mecab_t.add(p_tagger);
 
-          currentPointers.tagger = p_tagger;
-          actions.setupMecab(wrapped, currentPointers);
+          // currentPointers.tagger = p_tagger;
+          // actions.setupMecab(wrapped, currentPointers);
         }],
         print: (function() {
           // var element = document.getElementById('output');

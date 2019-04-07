@@ -1,45 +1,45 @@
 # compilation products of em++
-mecab.js
-mecab.html
-mecab.wasm
-mecab.data
+/mecab.js
+/mecab.html
+/mecab.wasm
+/mecab.data
 
 # outputs of edict2-downloader.sh
-edict2.gz
-edict2
-edict2.eucjp.txt
-edict2.utf8.txt
-edict2.utf16.txt
-edict2.utf16le.txt
+/edict2.gz
+/edict2
+/edict2.eucjp.txt
+/edict2.utf8.txt
+/edict2.utf16.txt
+/edict2.utf16le.txt
 
 # outputs of enamdict-downloader.sh
-enamdict
-enamdict.gz
-enamdict.utf8.txt
+/enamdict
+/enamdict.gz
+/enamdict.utf8.txt
 
 # outputs of kanjidic2-downloader.sh
-kanjidic2.xml
-kanjidic2.xml.gz
-kanjidic2-lf.utf8.txt
+/kanjidic2.xml
+/kanjidic2.xml.gz
+/kanjidic2-lf.utf8.txt
 
 # pre-compressed so that Apache doesn't have to gzip them every time
-mecab.js.gz
-mecab.wasm.gz
-mecab.data.gz
-edict2.eucjp.txt.gz
-edict2.utf8.txt.gz
-edict2.utf16.txt.gz
-edict2.utf16le.txt.gz
-enamdict.utf8.txt.gz
-kanjidic2-lf.utf8.txt.gz
+/mecab.js.gz
+/mecab.wasm.gz
+/mecab.data.gz
+/edict2.eucjp.txt.gz
+/edict2.utf8.txt.gz
+/edict2.utf16.txt.gz
+/edict2.utf16le.txt.gz
+/enamdict.utf8.txt.gz
+/kanjidic2-lf.utf8.txt.gz
 
-test.html
+/test.html
 
-sw.js
+/sw.js
 
-node_modules
-web_modules
-workbox_modules
+/node_modules
+/web_modules
+/workbox_modules
 
-dist
-dist.tar.gz
+/dist
+/dist.tar.gz
