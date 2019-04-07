@@ -97,61 +97,53 @@ export class MecabPipelineFactory {
   }
 }
 
-export class DictionariesFactory {
-	construct({
-		edict2Text,
-		enamdictText,
+export class Edict2LikeDictionaryFactory {
+  construct({
+    text,
+    glossParser,
     furiganaFitter,
-	}) {
+  }) {
     const searchTermRecommender = new SearchTermRecommender();
-    const headwordReadingRankerFactory
-    = new HeadwordReadingRankerFactory({
-      searchTermRecommender,
-    });
-    const headwordReadingPipelineFactory
-    = new HeadwordReadingPipelineFactory({
-      parsedEntrySorter: new HeadwordReadingSorter(),
-      parsedEntryReadingsResolver: new HeadwordReadingResolver({
-        furiganaFitter,
-      }),
-    });
-    const parsedEntryRelevancePipelineFactory
-    = new ParsedEntryRelevancePipelineFactory({
-      relevanceClassifier: new ParsedEntryRelevanceClassifier({
+    return new Edict2LikeDictionary({
+      headwordReadingRankerFactory: new HeadwordReadingRankerFactory({
         searchTermRecommender,
       }),
-      relevanceSorter: new ParsedEntrySorter(),
+      headwordReadingPipelineFactory: new HeadwordReadingPipelineFactory({
+        parsedEntrySorter: new HeadwordReadingSorter(),
+        parsedEntryReadingsResolver: new HeadwordReadingResolver({
+          furiganaFitter,
+        }),
+      }),
+      parsedEntryRelevancePipelineFactory: new ParsedEntryRelevancePipelineFactory({
+        relevanceClassifier: new ParsedEntryRelevanceClassifier({
+          searchTermRecommender,
+        }),
+        relevanceSorter: new ParsedEntrySorter(),
+      }),
+      matchPipelineFactory: new MatchPipelineFactory({
+        parser: new Edict2LikeParser({
+          glossParser,
+        }),
+      }),
+      matchesPipelineFactory: new MatchesPipelineFactory({
+        matcher: new Edict2LikeMatcher({
+          text: edict2Text,
+          escapeRegExp,
+        }),
+      }),
     });
+  }
+}
+
+export class DictionariesFactory {
+	construct({
+		edict2,
+		enamdict,
+	}) {
     return new Dictionaries({
       dictionaries: {
-        edict2: new Edict2LikeDictionary({
-          headwordReadingRankerFactory,
-          headwordReadingPipelineFactory,
-          matchPipelineFactory: new MatchPipelineFactory(
-            new Edict2LikeParser({
-              glossParser: new Edict2GlossParser(),
-            })),
-          matchesPipelineFactory: new MatchesPipelineFactory({
-            matcher: new Edict2LikeMatcher({
-              text: edict2Text,
-              escapeRegExp,
-            }),
-          }),
-        }),
-        enamdict: new Edict2LikeDictionary({
-          headwordReadingRankerFactory,
-          headwordReadingPipelineFactory,
-          matchPipelineFactory: new MatchPipelineFactory(
-            new Edict2LikeParser({
-              glossParser: new EnamdictGlossParser(),
-            })),
-          matchesPipelineFactory: new MatchesPipelineFactory({
-            matcher: new Edict2LikeMatcher({
-              text: enamdictText,
-              escapeRegExp,
-            }),
-          }),
-        }),
+        edict2,
+        enamdict,
       },
     });
 	}

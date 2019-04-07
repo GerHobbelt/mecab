@@ -20,7 +20,6 @@ export class MatchPipelineFactory {
     parser,
   }) {
     this._parser = parser;
-    this._relevancePipeline = relevancePipeline;
   }
 
   construct({

@@ -60,6 +60,17 @@ This webpage combines language technologies to suggest where to insert spaces,<b
         initStore,
         initApplication,
       } from './src/index.js';
+      import {
+        MecabContext,
+      } from './src/mecab/index.js';
+      import {
+        Kanjidic2Factory,
+        FuriganaFitterFactory,
+        MecabPipelineFactory,
+        Edict2LikeDictionaryFactory,
+        DictionariesFactory,
+      } from './src/factory.js';
+      import { Deferred } from './src/util/index.js';
       const [store, actions] = initStore();
 
       const edict2 = fetch('edict2.utf8.txt')
@@ -68,6 +79,13 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       .then(response => response.text());
       const kanjidic2 = fetch('kanjidic2-lf.utf8.txt')
       .then(response => response.text());
+
+      const mecabDeferred = new Deferred();
+      const mecabContext = mecabDeferred.promise.then((callbacks) => {
+        return new MecabContext({
+          callbacks,
+        });
+      });
 
       initApplication({
         dictionaryTextPromises: {
@@ -105,16 +123,16 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');
       const spinnerElement = document.getElementById('spinner');
-      const wrapped = {};
-      const toBeFreed = {
-        mecab_model_t: new Set(), // config
-        mecab_t: new Set(), // tagger
-        mecab_lattice_t: new Set(),
-      };
-      const currentPointers = {
-        tagger: undefined,
-        lattice: undefined,
-      }
+      // const wrapped = {};
+      // const toBeFreed = {
+      //   mecab_model_t: new Set(), // config
+      //   mecab_t: new Set(), // tagger
+      //   mecab_lattice_t: new Set(),
+      // };
+      // const currentPointers = {
+      //   tagger: undefined,
+      //   lattice: undefined,
+      // }
 
       const dicdir = '/naist-jdic';
 
@@ -151,6 +169,7 @@ dicdir = ${dicdir}
 `);
         }],
         postRun: [function() {
+          const wrapped = {};
           Object.assign(wrapped, {
             mecab_do: Module.cwrap('mecab_do2', 'number', ['string']),
             mecab_model_new2: Module.cwrap('mecab_model_new2', 'number', ['string']),
@@ -164,25 +183,28 @@ dicdir = ${dicdir}
 
           // we could probably skip the destroy since the world's ending anyway..
           Module.addOnExit(() => {
-            toBeFreed.mecab_t.forEach((p_mecab_t) => {
-              wrapped.mecab_destroy(p_mecab_t);
-            });
-            toBeFreed.mecab_model_t.forEach((p_mecab_model_t) => {
-              wrapped.mecab_model_destroy(p_mecab_model_t);
-            });
+            mecabContext.then((mecabContext) => mecabContext.free());
+            // toBeFreed.mecab_t.forEach((p_mecab_t) => {
+            //   wrapped.mecab_destroy(p_mecab_t);
+            // });
+            // toBeFreed.mecab_model_t.forEach((p_mecab_model_t) => {
+            //   wrapped.mecab_model_destroy(p_mecab_model_t);
+            // });
           });
+
+          mecabDeferred.resolve(wrapped);
 
           // const args = document.getElementById('args').value;
           // const args = '-o output.txt input.txt';
-          const args = '';
-          const p_mecab_model = wrapped.mecab_model_new2(args);
-          toBeFreed.mecab_model_t.add(p_mecab_model);
+          // const args = '';
+          // const p_mecab_model = wrapped.mecab_model_new2(args);
+          // toBeFreed.mecab_model_t.add(p_mecab_model);
 
-          const p_tagger = wrapped.mecab_model_new_tagger(p_mecab_model);
-          toBeFreed.mecab_t.add(p_tagger);
+          // const p_tagger = wrapped.mecab_model_new_tagger(p_mecab_model);
+          // toBeFreed.mecab_t.add(p_tagger);
 
-          currentPointers.tagger = p_tagger;
-          actions.setupMecab(wrapped, currentPointers);
+          // currentPointers.tagger = p_tagger;
+          // actions.setupMecab(wrapped, currentPointers);
         }],
         print: (function() {
           // var element = document.getElementById('output');
