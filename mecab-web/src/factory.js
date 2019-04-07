@@ -1,21 +1,6 @@
-// import { Dictionaries, } from './edict2/index.js';
-// import { Edict2LikeParser, Edict2LikeMatcher, } from './edict2/edict2Like.js';
-// import { Edict2GlossParser, EnamdictGlossParser, } from './edict2/parsedEntryGlossParser.js';
-// import { Edict2LikeMatchPipelineFactory, } from './edict2/matchPipeline.js';
-// import { Edict2LikeMatchesPipelineFactory, } from './edict2/matchesPipeline.js';
-// import {
-//   Edict2LikeParsedEntryRelevancePipelineFactory,
-//   Edict2LikeParsedEntryRelevanceClassifier,
-//   Edict2LikeParsedEntrySorter,
-// } from './edict2/parsedEntryRelevancePipeline.js';
-// import {
-//   Edict2LikeParsedEntryHeadwordReadingPipelineFactory,
-//   Edict2LikeParsedEntryHeadwordReadingSorter,
-//   Edict2LikeParsedEntryHeadwordReadingResolver,
-// } from './edict2/parsedEntryHeadwordReadingPipeline.js';
-// import { MecabOutputParser, } from './mecab/outputParser.js';
 import {
   Dictionaries,
+  Edict2LikeDictionary,
 
   Edict2LikeParser,
   Edict2LikeMatcher,
@@ -119,6 +104,10 @@ export class DictionariesFactory {
     furiganaFitter,
 	}) {
     const searchTermRecommender = new SearchTermRecommender();
+    const headwordReadingRankerFactory
+    = new HeadwordReadingRankerFactory({
+      searchTermRecommender,
+    });
     const headwordReadingPipelineFactory
     = new HeadwordReadingPipelineFactory({
       parsedEntrySorter: new HeadwordReadingSorter(),
@@ -134,32 +123,36 @@ export class DictionariesFactory {
       relevanceSorter: new ParsedEntrySorter(),
     });
     return new Dictionaries({
-      searchTermRecommender,
-      edict2: {
-        matchPipelineFactory: new MatchPipelineFactory(
-          new Edict2LikeParser({
-            glossParser: new Edict2GlossParser(),
-          })),
-        matchesPipelineFactory: new MatchesPipelineFactory({
-          matcher: new Edict2LikeMatcher({
-            text: edict2Text,
-            escapeRegExp,
+      dictionaries: {
+        edict2: new Edict2LikeDictionary({
+          headwordReadingRankerFactory,
+          headwordReadingPipelineFactory,
+          matchPipelineFactory: new MatchPipelineFactory(
+            new Edict2LikeParser({
+              glossParser: new Edict2GlossParser(),
+            })),
+          matchesPipelineFactory: new MatchesPipelineFactory({
+            matcher: new Edict2LikeMatcher({
+              text: edict2Text,
+              escapeRegExp,
+            }),
+          }),
+        }),
+        enamdict: new Edict2LikeDictionary({
+          headwordReadingRankerFactory,
+          headwordReadingPipelineFactory,
+          matchPipelineFactory: new MatchPipelineFactory(
+            new Edict2LikeParser({
+              glossParser: new EnamdictGlossParser(),
+            })),
+          matchesPipelineFactory: new MatchesPipelineFactory({
+            matcher: new Edict2LikeMatcher({
+              text: enamdictText,
+              escapeRegExp,
+            }),
           }),
         }),
       },
-      enamdict: {
-        matchPipelineFactory: new MatchPipelineFactory(
-          new Edict2LikeParser({
-            glossParser: new EnamdictGlossParser(),
-          })),
-        matchesPipelineFactory: new MatchesPipelineFactory({
-          matcher: new Edict2LikeMatcher({
-            text: enamdictText,
-            escapeRegExp,
-          }),
-        }),
-      },
-      headwordReadingPipelineFactory,
     });
 	}
 }

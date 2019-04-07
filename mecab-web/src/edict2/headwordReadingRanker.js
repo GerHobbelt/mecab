@@ -1,13 +1,13 @@
 export class HeadwordReadingRankerFactory {
   constructor({
-    mecabOutputParser: { getRecommendedSearchTerm, },
+    searchTermRecommender,
   }) {
-    this._mecabOutputParser = mecabOutputParser;
+    this._searchTermRecommender = searchTermRecommender;
   }
 
   construct(mecabToken) {
     return new HeadwordReadingRanker({
-      mecabOutputParser: this._mecabOutputParser,
+      searchTermRecommender: this._searchTermRecommender,
       mecabToken: this._mecabToken,
     });
   }
@@ -15,11 +15,11 @@ export class HeadwordReadingRankerFactory {
 
 export class HeadwordReadingRanker {
   constructor({
-    mecabOutputParser: { getRecommendedSearchTerm, },
+    searchTermRecommender,
     mecabToken,
   }) {
     this._mecabToken = mecabToken;
-    this._getRecommendedSearchTerm = getRecommendedSearchTerm;
+    this._searchTermRecommender = searchTermRecommender;
   }
 
   _classifyRelevanceHeadwordReadingCombination(
@@ -27,7 +27,7 @@ export class HeadwordReadingRanker {
     ) {
     const { token, readingHiragana, dictionaryForm } = this._mecabToken;
     const { reading } = readingTuple;
-    const term = this._getRecommendedSearchTerm(this._mecabToken);
+    const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
     let relevance = 0;
     if (headword === term) {
       relevance++;
@@ -42,7 +42,7 @@ export class HeadwordReadingRanker {
   }
 
   getMostRelevantHeadwordReadingCombination(headwordReadingsTuples) {
-    const term = this._getRecommendedSearchTerm(this._mecabToken);
+    const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
     const result = headwordReadingsTuples
     .reduce((headwordTupleAcc, { headword, readingTuples }) => {
       const proposed = readingTuples.reduce((readingTupleAcc, readingTuple) => {
