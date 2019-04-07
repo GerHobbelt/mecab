@@ -21,7 +21,7 @@ export class MatchesPipelineFactory {
     relevancePipeline,
     matchPipeline,
   }) {
-    return new ParsedEntryPipeline({
+    return new MatchesPipeline({
       matcher: this._matcher,
       matchPipeline,
       relevancePipeline,

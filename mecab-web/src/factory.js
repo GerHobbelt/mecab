@@ -141,6 +141,7 @@ export class DictionariesFactory {
         edict2,
         enamdict,
       },
+      searchTermRecommender: new SearchTermRecommender(),
     });
 	}
 }

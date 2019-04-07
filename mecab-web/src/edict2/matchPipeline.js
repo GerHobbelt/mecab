@@ -26,9 +26,9 @@ export class MatchPipelineFactory {
     headwordReadingPipeline,
     relevancePipeline,
   }) {
-    return new ParsedEntryPipeline({
+    return new MatchPipeline({
       parser: this._parser,
-      headwordReading,
+      headwordReadingPipeline,
       relevancePipeline,
     })
   }
