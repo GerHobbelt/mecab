@@ -5,6 +5,7 @@ export class MecabPipeline {
     tokenEnricher,
     whitespaceInterposer,
   }) {
+    this._mecab = mecab;
     this._mecabOutputParser = mecabOutputParser;
     this._tokenEnricher = tokenEnricher;
     this._whitespaceInterposer = whitespaceInterposer;

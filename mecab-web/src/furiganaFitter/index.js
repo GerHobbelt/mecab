@@ -211,6 +211,9 @@ export class FuriganaFitter {
       // we're not interested in fitting our hiragana reading to a katakana or English word, for example.
       return subtokens;
     }
+    if (token === readingHiragana) {
+      return subtokens;
+    }
     const regExStr = this._makeRegex(
       subtokens,
       isName);

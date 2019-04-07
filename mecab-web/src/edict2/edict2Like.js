@@ -1,3 +1,5 @@
+import edictAbbr from './abbrev.js';
+
 export class Edict2LikeMatcher {
   constructor({
     text,

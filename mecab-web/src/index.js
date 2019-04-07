@@ -1,7 +1,7 @@
-import { tokenize } from '../web_modules/wanakana.js';
-import { toSubtokensWithKanjiReadings, toMecabTokens, withWhitespacesSplicedBackIn, withInterWordWhitespaces } from './tokenizer/index.js';
-import { kanjidic2Lookup } from './kanjidic2/index.js';
-import { edictLookup, getSearchTerm } from './edict2/index.js';
+// import { tokenize } from '../web_modules/wanakana.js';
+// import { kanjidic2Lookup } from './kanjidic2/index.js';
+// import { edictLookup, getSearchTerm } from './edict2/index.js';
+import { SearchTermRecommender } from './mecab/index.js';
 
 import { createElement, render } from '../web_modules/preact.js';
 import { useState, useEffect } from '../web_modules/preact/hooks.js';
@@ -13,20 +13,11 @@ const html = htm.bind(createElement);
 
 function initStore() {
   const store = createStore({
-    ready: false,
-    mecabCallbacks: {},
-    mecabStructures: {},
-    parse: undefined,
-    kanjidic2Lookup: undefined,
+    languageTools: undefined,
     dictionaryLoading: {
       edict2: false,
       enamdict: false,
       kanjidic2: false,
-    },
-    dictionaryText: {
-      edict2: '',
-      enamdict: '',
-      kanjidic2: '',
     },
     initialQuery: `太郎はこの本を二郎を見た女性に渡した。
 すもももももももものうち。`,
@@ -42,22 +33,11 @@ function initStore() {
 }
 
 const actions = (store) => ({
-  setReady(state, ready) {
-    return { ...state, ready, };
-  },
   addParse(state, parsedQuery) {
     return { ...state, parses: [...state.parses, parsedQuery], };
   },
-  setupMecab(state, mecabCallbacks, mecabStructures) {
-    return {
-      ...state,
-      mecabCallbacks,
-      mecabStructures,
-      parse: bindParser(
-        mecabCallbacks,
-        mecabStructures),
-      ready: !!state.kanjidic2Lookup,
-    }
+  setLanguageTools(state, languageTools) {
+    return { ...state, languageTools, };
   },
   setDictionaryLoading(state, dict, bool) {
     return {
@@ -68,46 +48,27 @@ const actions = (store) => ({
       }
     };
   },
-  dictionaryLoaded(state, dict, text) {
-    let ready = state.ready;
-    let kanjidic2LookupFunc = state.kanjidic2Lookup;
-    if (dict === 'kanjidic2'
-      && !state.kanjidic2Lookup) {
-      kanjidic2LookupFunc = kanjidic2Lookup.bind(null, text);
-      ready = !!state.parse;
-    }
-    return {
-      ...state,
-      ready,
-      kanjidic2Lookup: kanjidic2LookupFunc,
-      dictionaryLoading: {
-        ...state.dictionaryLoading,
-        [dict]: false,
-      },
-      dictionaryText: {
-        ...state.dictionaryText,
-        [dict]: text,
-      },
-    };
-  },
-  // setChosenTerm(state, chosenTerm) {
-  //   return { ...state, chosenTerm, };
-  // },
   chooseTerm(state, mecabToken) {
-    const {edict2, enamdict} = state.dictionaryText;
-    if (!edict2 || !enamdict || !state.kanjidic2Lookup) {
+    if (!state.languageTools) {
       return state;
     }
-    let subtokens = mecabToken.subtokens
+    const {
+      dictionaries,
+      mecabPipeline,
+      furiganaFitter,
+    } = state.languageTools;
+    let subtokens = mecabToken.subtokens;
     if (!mecabToken.subtokens) {
-      if (mecabToken.readingHiragana) {
-        subtokens = toSubtokensWithKanjiReadings(
-          state.kanjidic2Lookup,
-          mecabToken.token,
-          mecabToken.readingHiragana);
-      } else {
-        subtokens = tokenize(mecabToken.token, { detailed: true });
-      }
+      // if (mecabToken.readingHiragana) {
+      //   subtokens = furiganaFitter.fitFurigana(
+      //     mecabToken.token,
+      //     mecabToken.readingHiragana);
+      // } else {
+      //   subtokens = tokenize(mecabToken.token, { detailed: true });
+      // }
+      subtokens = furiganaFitter.fitFurigana(
+        mecabToken.token,
+        mecabToken.readingHiragana || mecabToken.token);
     }
     const standardizedToken = {
       ...mecabToken,
@@ -117,13 +78,7 @@ const actions = (store) => ({
       return state;
     }
 
-    const results = edictLookup(
-      [
-      edict2,
-      enamdict,
-      state.kanjidic2Lookup
-      ],
-      standardizedToken);
+    const results = dictionaries.lookupToken(standardizedToken);
     console.log(results);
 
     return {
@@ -246,8 +201,13 @@ function htmlConcat(html, left, right) {
 }
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
-const Definition = connect('termResults,kanjidic2Lookup', actions)(
-  ({ termResults,kanjidic2Lookup }) => {
+const Definition = connect('termResults,languageTools', actions)(
+  ({ termResults,languageTools }) => {
+    if (!languageTools) {
+      return '';
+    }
+    const { furiganaFitter } = languageTools;
+
     const renderReadingTuple = (classList, headword, readingTuple) => {
       const mecabTokenLike = {
         token: headword,
@@ -258,14 +218,14 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
       `;
     };
 
-    const renderHeadwordReadingTuple = (classList, headwordReadingTuple) => {
+    const renderHeadwordReading = (classList, headwordReading) => {
       return html`
       <div class="alt-headword-container">
-        ${headwordReadingTuple.readingTuples.map(
+        ${headwordReading.readingTuples.map(
           renderReadingTuple.bind(
             null,
             classList,
-            headwordReadingTuple.headword))}
+            headwordReading.headword))}
       <//>
       `;
     };
@@ -273,45 +233,44 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
     // console.log('rendering results:');
     // console.log(results.value);
     const renderEdictResult = (result) => {
-      let headwordReadingTuples = result.result.headwordReadingCombinations;
-      let bestHeadwordReadingTuple = result.result.bestHeadwordReadingCombination;
-      if (!headwordReadingTuples.length) {
+      let headwordReadings = result.result.headwordReadings;
+      let bestHeadwordReading = result.result.bestHeadwordReading;
+      if (!headwordReadings.length) {
         // probably we got an entry that's entirely phonetic
         // so our headword _is_ the reading (but EDICT avoids duplicating information).
-        headwordReadingTuples = result.result.headwords.map((headword) => ({
+        headwordReadings = result.result.headwords.map((headword) => ({
           headword: headword.form,
           readingTuples: [{
             reading: headword.form,
-            subtokens: toSubtokensWithKanjiReadings(
-              kanjidic2Lookup,
+            subtokens: furiganaFitter.fitFurigana(
               headword.form,
               headword.form),
           }],
         }));
       }
-      if (!headwordReadingTuples.length) {
+      if (!headwordReadings.length) {
         // not supposed to be possible, but I suppose we have nothing to show.
         return '';
       }
-      if (!bestHeadwordReadingTuple) {
+      if (!bestHeadwordReading) {
         // might happen if we got an entry that's entirely phonetic (as above)
-        const { headword, readingTuples } = headwordReadingTuples[0];
+        const { headword, readingTuples } = headwordReadings[0];
         if (!readingTuples.length) {
           // we could check the other readingTuples, but this isn't supposed to be possible anyway.
           return '';
         }
-        bestHeadwordReadingTuple = {
+        bestHeadwordReading = {
           headword,
           readingTuple: readingTuples[0],
         };
       }
-      // console.log(bestHeadwordReadingTuple)
-      // console.log(headwordReadingTuples)
-      const remainingTuples = headwordReadingTuples.map((headwordReadingTuple) => ({
-        ...headwordReadingTuple,
-        readingTuples: headwordReadingTuple.readingTuples.filter(({ reading }) => 
-          headwordReadingTuple.headword !== bestHeadwordReadingTuple.headword
-          || reading !== bestHeadwordReadingTuple.readingTuple.reading),
+      // console.log(bestHeadwordReading)
+      // console.log(headwordReadings)
+      const remainingTuples = headwordReadings.map((headwordReading) => ({
+        ...headwordReading,
+        readingTuples: headwordReading.readingTuples.filter(({ reading }) => 
+          headwordReading.headword !== bestHeadwordReading.headword
+          || reading !== bestHeadwordReading.readingTuple.reading),
       }))
       .filter(({ readingTuples }) => readingTuples.length);
       // console.log(remainingTuples)
@@ -323,12 +282,12 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
 
       return html`
       <div class="hero-container">
-        ${renderReadingTuple('hero-definition', bestHeadwordReadingTuple.headword, bestHeadwordReadingTuple.readingTuple)}
+        ${renderReadingTuple('hero-definition', bestHeadwordReading.headword, bestHeadwordReading.readingTuple)}
         <div>${result.result.meaning}<//>
         <div>${result.result.line}<//>
       <//>
       <div class="alt-container">
-        ${remainingTuples.map(renderHeadwordReadingTuple.bind(null, 'alt-definition'))}
+        ${remainingTuples.map(renderHeadwordReading.bind(null, 'alt-definition'))}
       <//>
       `;
     };
@@ -340,8 +299,8 @@ const Definition = connect('termResults,kanjidic2Lookup', actions)(
     // };
     const renderEnamdictResult = renderEdictResult;
 
-    const term = getSearchTerm(termResults.key);
-
+    const term = new SearchTermRecommender()
+    .getRecommendedSearchTerm(termResults.key);
 
     // <h3>EDICT2<//>
 
@@ -397,8 +356,8 @@ const Sentence = ({ nodes, order }) => {
   `
 };
 
-const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText,kanjidic2Lookup', actions)(
-  ({ ready, parses, initialQuery, parse, termResults, dictionaryText, addParse, chooseTerm, kanjidic2Lookup }) => {
+const App = connect('languageTools,parses,initialQuery,termResults', actions)(
+  ({ languageTools, parses, initialQuery, termResults, addParse, chooseTerm, }) => {
     const keyedParses = parses.reduce((acc, parse) => ({
       parses: [...acc.parses, {
         key: acc.nextKey,
@@ -414,15 +373,15 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText,
 
     function onSubmit(event) {
       event.preventDefault();
-      const nodes = parse(kanjidic2Lookup, query);
+      const nodes = mecabPipeline.tokenize(query);
       addParse(nodes);
     }
 
     function onClick(event) {
-      const {edict2, enamdict, kanjidic2} = dictionaryText;
-      if (!edict2 || !enamdict || !kanjidic2) {
+      if (!languageTools) {
         return;
       }
+      const { mecabPipeline } = languageTools;
       // console.log(event);
       const tokenNode = event.target.className === 'token4'
       ? event.target
@@ -453,7 +412,7 @@ const App = connect('ready,parses,initialQuery,parse,termResults,dictionaryText,
         ${/* btw, we can't use React's onChange; Preact prefers browser-native onInput
         https://github.com/developit/preact/issues/1034 */''}
         <textarea class="input" value=${query} onInput=${event => setQuery(event.target.value)} />
-        <button class="submitter" disabled=${!ready}>Analyse Japanese<//>
+        <button class="submitter" disabled=${!languageTools}>Analyse Japanese<//>
       <//>
       <div class="paper-tape columnReverse" onClick=${onClick}>
         ${keyedParses.parses.map(renderParsedQuery)}
@@ -500,32 +459,9 @@ function renderProgress(store, element) {
   `, element);
 }
 
-function parse({ mecab_sparse_tostr }, { tagger }, kanjidic2Lookup, sentence) {
-  const whitespaces = [];
-  const r = new RegExp('[\\s　]+', 'g');
-  let match;
-  while(match = r.exec(sentence)) {
-    /*
-    0: ' ',
-    index: 27,
-    */
-    whitespaces.push(match);
-  }
-  const mecabOutput = mecab_sparse_tostr(tagger, sentence);
-  console.log(mecabOutput);
-  const mecabTokens = toMecabTokens(kanjidic2Lookup, mecabOutput);
-  const plusOriginalWhitespaces = withWhitespacesSplicedBackIn(mecabTokens, whitespaces);
-  const plusInterWordWhitespaces = withInterWordWhitespaces(plusOriginalWhitespaces);
-  return plusInterWordWhitespaces;
-}
-
-function bindParser(mecabCallbacks, mecabStructures) {
-  return parse.bind(null, mecabCallbacks, mecabStructures);
-}
-
 function initApplication({
   tokenizer,
-  dictionaryTextPromises,
+  dictionaryLoadPromises,
   store,
   actions,
   element,
@@ -534,15 +470,12 @@ function initApplication({
   actions.setDictionaryLoading('edict2', true);
   actions.setDictionaryLoading('enamdict', true);
   actions.setDictionaryLoading('kanjidic2', true);
-  dictionaryTextPromises.edict2.then((text) => {
-    actions.dictionaryLoaded('edict2', text);
-  });
-  dictionaryTextPromises.enamdict.then((text) => {
-    actions.dictionaryLoaded('enamdict', text);
-  });
-  dictionaryTextPromises.kanjidic2.then((text) => {
-    actions.dictionaryLoaded('kanjidic2', text);
-  });
+  dictionaryLoadPromises.edict2
+  .then(() => actions.setDictionaryLoading('edict2', false));
+  dictionaryLoadPromises.enamdict
+  .then(() => actions.setDictionaryLoading('enamdict', false));
+  dictionaryLoadPromises.kanjidic2
+  .then(() => actions.setDictionaryLoading('kanjidic2', false));
   renderApplication(store, element);
   renderProgress(store, progressElement);
 }

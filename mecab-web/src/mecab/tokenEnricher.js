@@ -20,7 +20,7 @@ export class MecabTokenEnricher {
   }
 
   _getImprovedToken(mecabToken) {
-    const readingHiragana = this._wanakana.toHiragana(mecabToken.reading, { passRomaji: false });
+    const readingHiragana = this._getHiraganaReading(mecabToken);
     return {
       ...mecabToken,
       readingHiragana,
@@ -29,7 +29,7 @@ export class MecabTokenEnricher {
   }
 
   getEnriched(mecabTokens) {
-    const improvedTokens = mecabTokens.map(mecabToken => this._addHiraganaReading(mecabToken));
+    const improvedTokens = mecabTokens.map(mecabToken => this._getImprovedToken(mecabToken));
     return improvedTokens;
   }
 }

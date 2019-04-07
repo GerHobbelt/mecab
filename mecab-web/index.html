@@ -56,10 +56,10 @@ This webpage combines language technologies to suggest where to insert spaces,<b
 
     <script type="module">
       import ModuleConsumer from './mecab.js';
-      // import {
-      //   initStore,
-      //   initApplication,
-      // } from './src/index.js';
+      import {
+        initStore,
+        initApplication,
+      } from './src/index.js';
       import {
         MecabContext,
       } from './src/mecab/index.js';
@@ -76,7 +76,8 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       } from './src/factory.js';
       import { Deferred } from './src/util/index.js';
       import { tokenize, toHiragana, } from './web_modules/wanakana.js';
-      // const [store, actions] = initStore();
+
+      const [store, actions] = initStore();
 
       const kanjidic2 = fetch('kanjidic2-lf.utf8.txt')
       .then(response => response.text())
@@ -136,50 +137,50 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           furiganaFitter,
         }));
 
-      Promise.all([dictionaries, mecabPipeline, furiganaFitter])
-      .then(([dictionaries, mecabPipeline, furiganaFitter]) => {
-        console.log(dictionaries);
-        console.log(mecabPipeline);
-        console.log(furiganaFitter);
-        Object.assign(window, {
+      const languageTools = Promise.all([dictionaries, mecabPipeline, furiganaFitter])
+      .then(([dictionaries, mecabPipeline, furiganaFitter]) => ({
           dictionaries,
           mecabPipeline,
           furiganaFitter,
-        })
+      }));
+
+      languageTools
+      .then(languageTools => {
+        console.log(languageTools);
+        Object.assign(window, { languageTools, });
+        return languageTools;
+      })
+      .then(languageTools => actions.setLanguageTools(languageTools));
+
+      initApplication({
+        dictionaryLoadPromises: {
+          edict2,
+          enamdict,
+          kanjidic2,
+        },
+        store,
+        actions,
+        element: document.getElementById('managed'),
+        progressElement: document.getElementById('progress-managed'),
       });
 
-      // initApplication({
-      //   dictionaryTextPromises: {
-      //     edict2,
-      //     enamdict,
-      //     kanjidic2,
-      //   },
-      //   store,
-      //   actions,
-      //   element: document.getElementById('managed'),
-      //   progressElement: document.getElementById('progress-managed'),
-      // });
-
-      // store.subscribe(state => {
-      //   if (state.ready
-      //     && !state.parses.length
-      //     && state.initialQuery) {
-      //     // console.log(state.initialQuery);
-      //     const parsed = state.parse(state.kanjidic2Lookup, state.initialQuery);
-      //     // console.log(parsed);
-      //     actions.addParse(parsed);
-      //   }
-      //   if (!state.termResults.key
-      //     && state.dictionaryText
-      //     && state.dictionaryText.edict2
-      //     && state.dictionaryText.enamdict
-      //     && state.kanjidic2Lookup)
-      //   {
-      //     actions.chooseTerm({
-      //       token: '双子',
-      //     });
-      //   }
-      // });
+      store.subscribe(state => {
+        if (state.languageTools) {
+          const { mecabPipeline } = state.languageTools;
+          if (!state.parses.length
+            && state.initialQuery) {
+            // console.log(state.initialQuery);
+            const parsed = mecabPipeline.tokenize(state.initialQuery);
+            // console.log(parsed);
+            actions.addParse(parsed);
+          }
+          if (!state.termResults.key) {
+            actions.chooseTerm({
+              token: '双子',
+            });
+          }
+        }
+      });
 
       const statusElement = document.getElementById('status');
       const progressElement = document.getElementById('progress');

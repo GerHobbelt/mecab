@@ -119,13 +119,13 @@ export class HeadwordReadingPipeline {
           parsedEntry.headwords,
           parsedEntry.readings)));
 
-    const bestHeadwordReadingCombination
+    const bestHeadwordReading
     = this._headwordReadingRanker.getMostRelevantHeadwordReadingCombination(headwordReadings);
 
     return {
       ...parsedEntry,
       headwordReadings,
-      bestHeadwordReadingCombination,
+      bestHeadwordReading,
     };
   }
 }
