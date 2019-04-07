@@ -6,7 +6,7 @@ export const escapeRegExp = (str) => {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
-export class Deferred() {
+export class Deferred {
   constructor() {
     this.promise = new Promise((resolve, reject) => {
       this.resolve = resolve;

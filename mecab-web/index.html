@@ -56,10 +56,10 @@ This webpage combines language technologies to suggest where to insert spaces,<b
 
     <script type="module">
       import ModuleConsumer from './mecab.js';
-      import {
-        initStore,
-        initApplication,
-      } from './src/index.js';
+      // import {
+      //   initStore,
+      //   initApplication,
+      // } from './src/index.js';
       import {
         MecabContext,
       } from './src/mecab/index.js';
@@ -76,7 +76,7 @@ This webpage combines language technologies to suggest where to insert spaces,<b
       } from './src/factory.js';
       import { Deferred } from './src/util/index.js';
       import { tokenize, toHiragana, } from './web_modules/wanakana.js';
-      const [store, actions] = initStore();
+      // const [store, actions] = initStore();
 
       const kanjidic2 = fetch('kanjidic2-lf.utf8.txt')
       .then(response => response.text())
@@ -126,11 +126,14 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           enamdict,
         }));
 
-      const mecabPipeline = mecabContext
-      .then(mecabContext => new MecabPipelineFactory()
+      const mecabPipeline = Promise.all([mecabContext, furiganaFitter])
+      .then(([mecabContext, furiganaFitter]) => new MecabPipelineFactory()
         .construct({
-          mecab: mecabContext.construct(),
+          mecab: mecabContext.construct({
+            config: {},
+          }),
           wanakana: { toHiragana, },
+          furiganaFitter,
         }));
 
       Promise.all([dictionaries, mecabPipeline])

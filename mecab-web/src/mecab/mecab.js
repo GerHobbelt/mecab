@@ -10,8 +10,15 @@ export class MecabContext {
       mecab_model_destroy,
     },
   }) {
-    this._callbacks = callbacks;
-    this.tagger = tagger;
+    this._callbacks = {
+      mecab_sparse_tostr,
+
+      mecab_model_new2,
+      mecab_model_new_tagger,
+
+      mecab_destroy,
+      mecab_model_destroy,
+    };
     this._managed = new Set();
   }
 
@@ -33,7 +40,9 @@ export class MecabContext {
     const p_tagger = this._callbacks.mecab_model_new_tagger(p_mecab_model);
 
     return new Mecab({
-      config,
+      config: {
+        endOfSentence,
+      },
       query: (sentence) => {
         return this._callbacks.mecab_sparse_tostr(p_tagger, sentence);
       },

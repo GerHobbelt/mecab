@@ -1,5 +1,5 @@
-import { tokenize, toHiragana } from '../../web_modules/wanakana.js';
-import { parseKanjidic2Entry } from '../kanjidic2/index.js';
+// import { tokenize, toHiragana } from '../../web_modules/wanakana.js';
+// import { parseKanjidic2Entry } from '../kanjidic2/index.js';
 
 
 

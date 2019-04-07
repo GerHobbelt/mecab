@@ -33,7 +33,10 @@ export class Dictionaries {
       enamdict,
     },
   }) {
-    this._dictionaries = dictionaries;
+    this._dictionaries = {
+      edict2,
+      enamdict,
+    };
   }
 
   lookup(mecabToken) {

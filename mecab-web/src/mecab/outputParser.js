@@ -8,7 +8,7 @@ export class SearchTermRecommender {
 
 export class MecabOutputParser {
   constructor({
-    config = {
+    config: {
       endOfSentence = 'EOS\n',
     },
     escapeRegExp,

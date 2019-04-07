@@ -42,7 +42,7 @@ import {
   Kanjidic2,
 } from './kanjidic2/index.js';
 
-import { tokenize, toHiragana, } from './web_modules/wanakana.js';
+// import { tokenize, toHiragana, } from './web_modules/wanakana.js';
 
 export class Kanjidic2Factory {
   construct({
@@ -65,7 +65,7 @@ export class FuriganaFitterFactory {
   }) {
     const furiganaFitter = new FuriganaFitter({
       kanjidic2,
-      wanakana,
+      wanakana: { tokenize },
       escapeRegExp,
     });
   }
@@ -75,6 +75,7 @@ export class MecabPipelineFactory {
   construct({
     mecab,
     wanakana: { toHiragana, },
+    furiganaFitter,
   }) {
     const mecabOutputParser = new MecabOutputParser({
       escapeRegExp,
@@ -84,7 +85,7 @@ export class MecabPipelineFactory {
       mecab,
       mecabOutputParser,
       tokenEnricher: new MecabTokenEnricher({
-        wanakana,
+        wanakana: { toHiragana, },
         furiganaFitter,
       }),
       whitespaceInterposer: new MecabWhitespaceInterposer(),
@@ -122,7 +123,7 @@ export class Edict2LikeDictionaryFactory {
       }),
       matchesPipelineFactory: new MatchesPipelineFactory({
         matcher: new Edict2LikeMatcher({
-          text: edict2Text,
+          text,
           escapeRegExp,
         }),
       }),
