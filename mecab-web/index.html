@@ -136,13 +136,15 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           furiganaFitter,
         }));
 
-      Promise.all([dictionaries, mecabPipeline])
-      .then(([dictionaries, mecabPipeline]) => {
+      Promise.all([dictionaries, mecabPipeline, furiganaFitter])
+      .then(([dictionaries, mecabPipeline, furiganaFitter]) => {
         console.log(dictionaries);
         console.log(mecabPipeline);
+        console.log(furiganaFitter);
         Object.assign(window, {
           dictionaries,
           mecabPipeline,
+          furiganaFitter,
         })
       });
 

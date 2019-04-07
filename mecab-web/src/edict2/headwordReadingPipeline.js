@@ -88,7 +88,7 @@ export class HeadwordReadingPipelineFactory {
     headwordReadingSorter,
     headwordReadingResolver,
   }) {
-    this._parsedEntrySorter = headwordReadingSorter;
+    this._headwordReadingSorter = headwordReadingSorter;
     this._headwordReadingResolver = headwordReadingResolver;
   }
 
@@ -116,8 +116,8 @@ export class HeadwordReadingPipeline {
     const headwordReadings = this._headwordReadingSorter.withHeadwordReadingsSorted(
       this._headwordReadingSorter.groupHeadwordReadingCombinations(
         this._headwordReadingResolver.getHeadwordReadingCombinations(
-          headwords,
-          readings)));
+          parsedEntry.headwords,
+          parsedEntry.readings)));
 
     const bestHeadwordReadingCombination
     = this._headwordReadingRanker.getMostRelevantHeadwordReadingCombination(headwordReadings);

@@ -63,7 +63,7 @@ export class FuriganaFitterFactory {
     kanjidic2,
     wanakana: { tokenize },
   }) {
-    const furiganaFitter = new FuriganaFitter({
+    return new FuriganaFitter({
       kanjidic2,
       wanakana: { tokenize },
       escapeRegExp,
@@ -105,8 +105,8 @@ export class Edict2LikeDictionaryFactory {
         searchTermRecommender,
       }),
       headwordReadingPipelineFactory: new HeadwordReadingPipelineFactory({
-        parsedEntrySorter: new HeadwordReadingSorter(),
-        parsedEntryReadingsResolver: new HeadwordReadingResolver({
+        headwordReadingSorter: new HeadwordReadingSorter(),
+        headwordReadingResolver: new HeadwordReadingResolver({
           furiganaFitter,
         }),
       }),
@@ -125,7 +125,7 @@ export class Edict2LikeDictionaryFactory {
           text,
           escapeRegExp,
         }),
-        parsedEntrySorter: new ParsedEntriesSorter(),
+        parsedEntriesSorter: new ParsedEntriesSorter(),
       }),
     });
   }
