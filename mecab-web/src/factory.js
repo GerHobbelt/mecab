@@ -61,17 +61,11 @@ export class Kanjidic2Factory {
 export class FuriganaFitterFactory {
   construct({
     kanjidic2,
-    mecabConfig: {
-      endOfSentence = 'EOS\n',
-    },
+    wanakana: { tokenize },
   }) {
-    const mecabOutputParser = new MecabOutputParser({
-      escapeRegExp,
-      config: mecabConfig,
-    });
     const furiganaFitter = new FuriganaFitter({
       kanjidic2,
-      wanakana: { tokenize },
+      wanakana,
       escapeRegExp,
     });
   }
@@ -80,6 +74,7 @@ export class FuriganaFitterFactory {
 export class MecabPipelineFactory {
   construct({
     mecab,
+    wanakana: { toHiragana, },
   }) {
     const mecabOutputParser = new MecabOutputParser({
       escapeRegExp,
@@ -89,7 +84,7 @@ export class MecabPipelineFactory {
       mecab,
       mecabOutputParser,
       tokenEnricher: new MecabTokenEnricher({
-        wanakana: { toHiragana, },
+        wanakana,
         furiganaFitter,
       }),
       whitespaceInterposer: new MecabWhitespaceInterposer(),
