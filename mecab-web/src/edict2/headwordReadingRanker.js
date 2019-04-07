@@ -8,7 +8,7 @@ export class HeadwordReadingRankerFactory {
   construct(mecabToken) {
     return new HeadwordReadingRanker({
       searchTermRecommender: this._searchTermRecommender,
-      mecabToken: this._mecabToken,
+      mecabToken,
     });
   }
 }
@@ -22,9 +22,7 @@ export class HeadwordReadingRanker {
     this._searchTermRecommender = searchTermRecommender;
   }
 
-  _classifyRelevanceHeadwordReadingCombination(
-    { headword, readingTuple },
-    ) {
+  _classifyRelevanceHeadwordReadingCombination(headword, readingTuple) {
     const { token, readingHiragana, dictionaryForm } = this._mecabToken;
     const { reading } = readingTuple;
     const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
@@ -64,13 +62,16 @@ export class HeadwordReadingRanker {
         relevance: -1,
         proposed: undefined,
       }).proposed;
-      const relevance = this._classifyRelevanceHeadwordReadingCombination(
-        this._mecabToken,
-        proposed);
-      if (relevance > headwordTupleAcc.relevance) {
-        return {
-          relevance,
-          proposed,
+      // always expected to be true, since we shouldn't produce empty array of reading tuples
+      if (proposed) {
+        const relevance = this._classifyRelevanceHeadwordReadingCombination(
+          this._mecabToken,
+          proposed);
+        if (relevance > headwordTupleAcc.relevance) {
+          return {
+            relevance,
+            proposed,
+          }
         }
       }
       return headwordTupleAcc;

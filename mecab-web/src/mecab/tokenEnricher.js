@@ -3,12 +3,12 @@ export class MecabTokenEnricher {
     wanakana: { toHiragana },
     furiganaFitter,
   }) {
-    this._toHiragana = toHiragana;
+    this._wanakana = { toHiragana, };
     this._furiganaFitter = furiganaFitter;
   }
 
   _getHiraganaReading(mecabToken) {
-    return this._toHiragana(mecabToken.reading, { passRomaji: false });
+    return this._wanakana.toHiragana(mecabToken.reading, { passRomaji: false });
   }
 
   _getSubtokens(readingHiragana, { token, partOfSpeech }) {
@@ -20,7 +20,7 @@ export class MecabTokenEnricher {
   }
 
   _getImprovedToken(mecabToken) {
-    const readingHiragana = this._toHiragana(mecabToken.reading, { passRomaji: false });
+    const readingHiragana = this._wanakana.toHiragana(mecabToken.reading, { passRomaji: false });
     return {
       ...mecabToken,
       readingHiragana,

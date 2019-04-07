@@ -43,7 +43,7 @@ export class MatchesPipeline {
 
   lookup(term) {
     const matches = this._matcher.match(term);
-    const parsedEntries = matches.map((match) => this._matchPipeline.parse(match))
+    const parsedEntries = matches.map((match) => this._matchPipeline.parse(match));
     const sorted = this._parsedEntriesSorter.sortByRelevance(parsedEntries);
     return parsedEntries;
   }

@@ -1,11 +1,11 @@
 export class FuriganaFitter {
   constructor({
     kanjidic2,
-    wanakana: { tokenize },
+    wanakana: { tokenize, toHiragana, },
     escapeRegExp,
   }) {
     this._kanjidic2 = kanjidic2;
-    this._tokenize = tokenize;
+    this._wanakana = { tokenize, toHiragana, };
     this._escapeRegExp = escapeRegExp;
   }
 
@@ -15,12 +15,11 @@ export class FuriganaFitter {
     tokenIsEntirelyKanji,
     precedingSubtoken,
     followingSubtoken) {
-    const entry = this._kanjidic2.lookup(kanji);
-    if (!entry) {
+    const parsed = this._kanjidic2.lookup(kanji);
+    if (!parsed) {
       return '(.*)';
     }
-    const parsed = this._kanjidic2.parse(entry);
-    const onReadingsInHiragana = parsed.ons.map(toHiragana);
+    const onReadingsInHiragana = parsed.ons.map(this._wanakana.toHiragana);
     const kunsWithCompatibleOkurigana = parsed.kuns.filter(kun =>
       !kun.okurigana
       || (followingSubtoken && followingSubtoken.type === 'hiragana' && followingSubtoken.value === kun.okurigana))
@@ -202,7 +201,7 @@ export class FuriganaFitter {
   }
 
   fitFurigana(token, readingHiragana, isName) {
-    const subtokens = this._tokenize(token, { detailed: true });
+    const subtokens = this._wanakana.tokenize(token, { detailed: true });
     // if there's no kanji, then there's nothing to fit furigana to
     // and if there's anything other than kanji+hiragana, then our "strip okurigana" tactic won't work.
     if (!subtokens.some((subtoken) => ['kanji'].includes(subtoken.type))

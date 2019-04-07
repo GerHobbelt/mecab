@@ -33,28 +33,28 @@ export class ParsedEntryRelevanceClassifier {
     this._searchTermRecommender = searchTermRecommender;
   }
 
-  classifyRelevance(mecabToken, results) {
+  classifyRelevance(mecabToken, parsedEntry) {
     const { token, readingHiragana, dictionaryForm } = mecabToken;
-    const term = this._searchTermRecommender.getRecommendedSearchTerm.getSearchTerm(mecabToken);
+    const term = this._searchTermRecommender.getRecommendedSearchTerm(mecabToken);
     // console.warn(term);
     // console.warn(results);
-    return results.map((result) => ({
+    return {
       relevance: {
-        queryMatchesHeadword: result.headwords.reduce((acc, curr) => {
+        queryMatchesHeadword: parsedEntry.headwords.reduce((acc, curr) => {
           return acc || curr.form === term;
         }, false),
-        // queryMatchesPriorityHeadword: result.headwords.reduce((acc, curr) => {
+        // queryMatchesPriorityHeadword: parsedEntry.headwords.reduce((acc, curr) => {
         //   return acc || (curr.tags.priorityEntry && curr.form === term);
         // }, false),
-        queryMatchesReading: result.readings.reduce((acc, curr) => {
+        queryMatchesReading: parsedEntry.readings.reduce((acc, curr) => {
           return acc || curr.form === readingHiragana;
         }, false),
-        // queryMatchesPriorityReading: result.readings.reduce((acc, curr) => {
+        // queryMatchesPriorityReading: parsedEntry.readings.reduce((acc, curr) => {
         //   return acc || (curr.tags.priorityEntry && curr.form === readingHiragana);
         // }, false),
       },
-      result,
-    }));
+      result: parsedEntry,
+    };
   }
 }
 

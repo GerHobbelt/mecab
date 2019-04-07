@@ -61,11 +61,11 @@ export class Kanjidic2Factory {
 export class FuriganaFitterFactory {
   construct({
     kanjidic2,
-    wanakana: { tokenize },
+    wanakana: { tokenize, toHiragana, },
   }) {
     return new FuriganaFitter({
       kanjidic2,
-      wanakana: { tokenize },
+      wanakana: { tokenize, toHiragana, },
       escapeRegExp,
     });
   }
