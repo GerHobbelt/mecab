@@ -22,8 +22,7 @@ export class HeadwordReadingRanker {
     this._searchTermRecommender = searchTermRecommender;
   }
 
-  _classifyRelevanceHeadwordReadingCombination(headword, readingTuple) {
-    const { token, readingHiragana, dictionaryForm } = this._mecabToken;
+  _classifyRelevanceHeadwordReading(headword, readingTuple) {
     const { reading } = readingTuple;
     const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
     let relevance = 0;
@@ -39,7 +38,7 @@ export class HeadwordReadingRanker {
     return relevance;
   }
 
-  getMostRelevantHeadwordReadingCombination(headwordReadingsTuples) {
+  getMostRelevantHeadwordReading(headwordReadingsTuples) {
     const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
     const result = headwordReadingsTuples
     .reduce((headwordTupleAcc, { headword, readingTuples }) => {
@@ -48,7 +47,7 @@ export class HeadwordReadingRanker {
           headword,
           readingTuple,
         };
-        const relevance = this._classifyRelevanceHeadwordReadingCombination(
+        const relevance = this._classifyRelevanceHeadwordReading(
           this._mecabToken,
           proposed);
         if (relevance > readingTupleAcc.relevance) {
@@ -64,7 +63,7 @@ export class HeadwordReadingRanker {
       }).proposed;
       // always expected to be true, since we shouldn't produce empty array of reading tuples
       if (proposed) {
-        const relevance = this._classifyRelevanceHeadwordReadingCombination(
+        const relevance = this._classifyRelevanceHeadwordReading(
           this._mecabToken,
           proposed);
         if (relevance > headwordTupleAcc.relevance) {

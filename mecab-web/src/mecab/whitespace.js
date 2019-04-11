@@ -23,7 +23,7 @@ export class MecabWhitespaceInterposer {
   _withWhitespacesSplicedBackIn(mecabTokens, whitespaces) {
     return mecabTokens.reduce((accumulator, currentToken) => {
       const [tokens, remainingWhitespaces, sentenceIx] = accumulator;
-      const currentSentenceIx = sentenceIx + currentToken.token.length;
+      const currentSentenceIx = sentenceIx + currentToken.surfaceLayerForm.length;
       if (remainingWhitespaces.length
         && remainingWhitespaces[0].index === currentSentenceIx) {
         const whitespaceObj = remainingWhitespaces[0];
@@ -33,7 +33,7 @@ export class MecabWhitespaceInterposer {
             ...tokens,
             currentToken,
             {
-              token: whitespaceToken,
+              surfaceLayerForm: whitespaceToken,
               isWhitespace: true,
               subtokens: [
                 {
@@ -80,7 +80,7 @@ export class MecabWhitespaceInterposer {
             ...tokens,
             {
               isWhitespace: true,
-              token: ' ',
+              surfaceLayerForm: ' ',
               subtokens: [
                 {
                   type: 'whitespace',

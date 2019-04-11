@@ -28,6 +28,7 @@ import {
   MecabContext,
   MecabOutputParser,
   SearchTermRecommender,
+  MecabTokenAgglutinator,
   MecabTokenEnricher,
   MecabWhitespaceInterposer,
   MecabPipeline,
@@ -88,6 +89,7 @@ export class MecabPipelineFactory {
         wanakana: { toHiragana, },
         furiganaFitter,
       }),
+      tokenAgglutinator: new MecabTokenAgglutinator(),
       whitespaceInterposer: new MecabWhitespaceInterposer(),
     })
   }

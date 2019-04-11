@@ -45,7 +45,7 @@ export class Dictionaries {
 
   lookupTerm(term) {
     return this.lookupToken({
-      token: term,
+      surfaceLayerForm: term,
     });
   }
 
