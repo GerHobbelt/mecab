@@ -17,7 +17,8 @@ export class MecabPipeline {
     const mecabOutput = this._mecab.query(sentence)
     const nominalTokens = this._mecabOutputParser.parse(mecabOutput);
     const agglutinatedTokens = this._tokenAgglutinator.agglutinate(nominalTokens);
-    const enrichedTokens = this._tokenEnricher.getEnriched(agglutinatedTokens);
+    console.log(agglutinatedTokens)
+    const enrichedTokens = this._tokenEnricher.getEnriched(nominalTokens); // TODO: use agglutinated
     const withWhitespace = this._whitespaceInterposer.withWhitespacesSplicedBackIn(enrichedTokens, sentence);
     return withWhitespace;
   }

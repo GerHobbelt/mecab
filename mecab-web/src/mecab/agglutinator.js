@@ -136,21 +136,73 @@ export class Word {
     pronunciation,
     grammar,
     basic,
-    partOfSpeech,
+    part_of_speech,
     nodeStr,
     token,
   }) {
-    this._read = read;
-    this._pronunciation = pronunciation;
+    this._reading = read;
+    this._transcription = pronunciation;
     this._grammar = grammar;
-    this._basic = basic;
-    this._partOfSpeech = partOfSpeech;
-    this._nodeStr = nodeStr;
+    this._lemma = basic; // "聞く"
+    this._part_of_speech = part_of_speech; // eg. Pos.Noun
+    this._word = nodeStr; // "聞かせられ"
     this._token = token;
   }
 
-  get partOfSpeech() {
-    return this._partOfSpeech;
+  set part_of_speech(value) {
+    this._part_of_speech = value;
+  }
+
+  get part_of_speech() {
+    return this._part_of_speech;
+  }
+
+  get tokens() {
+    return this._tokens;
+  }
+
+  get word() {
+    return this._word;
+  }
+
+  get lemma() {
+    return this._lemma;
+  }
+
+  toString() {
+    return this._word;
+  }
+
+  addToken(token) {
+    this._tokens.push(token);
+  }
+
+  appendToWord(suffix) {
+    if (this._word === undefined) {
+      this._word = "_"; // likely won't experience a null word, actually.
+    }
+    this._word += suffix;
+  }
+
+  appendToReading(suffix) {
+    if (this._reading === undefined) {
+      this._reading = "_";
+    }
+    this._reading += suffix;
+  }
+
+  appendToTranscription(suffix) {
+    if (this._transcription === undefined) {
+      this._transcription = "_";
+    }
+    this._transcription += suffix;
+  }
+
+  appendToLemma(suffix) {
+    if (this._lemma === undefined) {
+      this._lemma = "_";
+    }
+    this._lemma += suffix;
   }
 }
 
@@ -169,7 +221,7 @@ export class MecabTokenAgglutinator {
         case Const.MEISHI:
         // case Const.MICHIGO:
           pos = Pos.Noun;
-          if(partOfSpeechSubclass1 === Const.NO_DATA) break;
+          if (partOfSpeechSubclass1 === Const.NO_DATA) break;
           switch(partOfSpeechSubclass1) {
             case Const.KOYUUMEISHI:
               pos = Pos.ProperNoun;
@@ -196,7 +248,7 @@ export class MecabTokenAgglutinator {
                   pos = Pos.Adjective;
                   // Using inflectionForm as in Ruby script, whereas Java used partOfSpeechSubclass1
                   // https://github.com/Kimtaro/ve/blob/master/lib/providers/mecab_ipadic.rb#L207
-                  if(following.inflectionForm === Const.TAIGENSETSUZOKU) {
+                  if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
                     eat_next = true;
                     eat_lemma = false;
                   }
@@ -222,14 +274,14 @@ export class MecabTokenAgglutinator {
               const following = tokenArray[i+1];
               switch(current.partOfSpeechSubclass2){
                 case Const.FUKUSHIKANOU:
-                  if(following.partOfSpeech === Const.JOSHI
+                  if (following.partOfSpeech === Const.JOSHI
                     && following.surfaceForm === Const.NI){
                     pos = Pos.Adverb;
                     eat_next = false; // Changed this to false because 'case JOSHI' has 'attach_to_previous = true'.
                   }
                   break;
                 case Const.JODOUSHIGOKAN:
-                  if(following.inflectionType === Const.TOKUSHU_DA){
+                  if (following.inflectionType === Const.TOKUSHU_DA){
                     pos = Pos.Verb;
                     grammar = Grammar.Auxiliary;
                     if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
@@ -244,7 +296,7 @@ export class MecabTokenAgglutinator {
                 case Const.KEIYOUDOUSHIGOKAN:
                   pos = Pos.Adjective;
                   // TODO: Java version called both of these inflectionType, but Ruby version calls the latter inflectionForm
-                  if((following.inflectionType === Const.TOKUSHU_DA
+                  if ((following.inflectionType === Const.TOKUSHU_DA
                     && following.inflectionForm === Const.TAIGENSETSUZOKU)
                     || following.partOfSpeechSubclass1 === Const.RENTAIKA) {
                     eat_next = true;
@@ -258,18 +310,18 @@ export class MecabTokenAgglutinator {
               // TODO: "recurse and find following numbers and add to this word. Except non-numbers like 幾"
               // Refers to line 261.
               pos = Pos.Number;
-              if(wordList.length
-                && wordList[wordList.length-1].partOfSpeech === Pos.Number){
+              if (acc.wordList.length
+                && acc.wordList[acc.wordList.length-1].partOfSpeech === Pos.Number){
                 attach_to_previous = true;
                 also_attach_to_lemma = true;
               }
               break;
             case Const.SETSUBI:
               // Refers to line 267.
-              if(current.partOfSpeechSubclass2 === Const.JINMEI) {
+              if (current.partOfSpeechSubclass2 === Const.JINMEI) {
                 pos = Pos.Suffix;
               } else {
-                if(current.partOfSpeechSubclass2 === Const.TOKUSHU
+                if (current.partOfSpeechSubclass2 === Const.TOKUSHU
                   && current.lemma === Const.SA){
                   update_pos = true;
                   pos = Pos.Noun;
@@ -303,10 +355,10 @@ export class MecabTokenAgglutinator {
           Const.TOKUSHU_NAI,
           Const.TOKUSHU_TAI,
           Const.TOKUSHU_MASU,
-          Const.TOKUSHU_NU
+          Const.TOKUSHU_NU,
           ];
-          if(previous === undefined
-            || previous.partOfSpeechSubclass1 !== Const.KAKARIJOSHI
+          if (acc.previous === undefined
+            || acc.previous.partOfSpeechSubclass1 !== Const.KAKARIJOSHI
             && qualifyingList1.includes(current.inflectionType)) {
             attach_to_previous = true;
           } else if (current.inflectionType === Const.FUHENKAGATA
@@ -316,7 +368,7 @@ export class MecabTokenAgglutinator {
             // TODO: Java version overlooks logical operator precedence; using Ruby version
             [
             Const.TOKUSHU_DA,
-            Const.TOKUSHU_DESU
+            Const.TOKUSHU_DESU,
             ].includes(current.inflectionType)
             && current.surfaceForm !== Const.NA) {
               pos = Pos.Verb;
@@ -337,15 +389,99 @@ export class MecabTokenAgglutinator {
               break;
           }
           break;
+        case Const.KEIYOUSHI:
+          pos = Pos.Adjective;
+          break;
+        case Const.JOSHI:
+          // Refers to line 309.
+          pos = Pos.Postposition;
+          const qualifyingList2 = [
+          Const.TE,
+          Const.DE,
+          Const.BA,
+          ];
+          // Java version adds NI to this, but let's start by following Ruby version.
+          if (current.partOfSpeechSubclass1 === Const.SETSUZOKUJOSHI
+            && qualifyingList2.includes(current.surfaceForm)
+            // || current.surfaceForm === Const.NI
+            ) {
+              attach_to_previous = true;
+            }
+          break;
+        case Const.RENTAISHI:
+          pos = Pos.Determiner;
+          break;
+        case Const.SETSUZOKUSHI:
+          pos = Pos.Conjunction;
+          break;
+        case Const.FUKUSHI:
+          pos = Pos.Adverb;
+          break;
+        case Const.KIGOU:
+          pos = Pos.Symbol;
+          break;
+        case Const.FIRAA:
+        case Const.KANDOUSHI:
+          pos = Pos.Interjection;
+          break;
+        case Const.SONOTA:
+          pos = Pos.Other;
+          break;
+        default:
+          pos = Pos.TBD;
+          // C'est une catastrophe
       }
 
-      if (eat_next) {
-        // return {
-        //   ...acc,
-        //   previous: current,
-        //   tokens: [...acc.tokens, ],
-        // };
+      const getFeatureSafely = (token, feature) => {
+        if (token.feature === undefined) {
+          return '*';
+        }
+        return token.feature;
+      };
+
+      if (attach_to_previous && acc.wordList.length){
+        const finalWord = acc.wordList[acc.wordList.length-1];
+        // these sometimes try to add to null readings.
+        finalWord.addToken(current);
+        finalWord.appendToWord(current.surfaceForm);
+        finalWord.appendToReading(getFeatureSafely(current, 'reading'));
+        finalWord.appendToTranscription(getFeatureSafely(current, 'pronunciation'));
+        if (also_attach_to_lemma) {
+          finalWord.appendToLemma(current.lemma);
+        }
+        if (update_pos) {
+          finalWord.part_of_speech = pos;
+        }
+      } else {
+        const word = new Word({
+          read: current.reading,
+          pronunciation: current.pronunication,
+          grammar,
+          basic: current.lemma,
+          partOfSpeech: pos,
+          nodeStr: current.surfaceForm,
+          token: current,
+        });
+        if (eat_next){
+          if (i === tokenArray.length-1) {
+            throw new Error("There's a path that allows array overshooting.");
+          }
+          const following = tokenArray[i+1];
+          word.addToken(following);
+          word.appendToWord(following.surfaceForm);
+          word.appendToReading(following.reading);
+          word.appendToTranscription(getFeatureSafely(following, 'pronunciation'));
+          if (eat_lemma) {
+            word.appendToLemma(following.lemma);
+          }
+        }
+        return {
+          ...acc,
+          wordList: [...acc.wordList, word],
+          previous: current,
+        }
       }
+
       return {
         ...acc,
         previous: current,
@@ -356,6 +492,6 @@ export class MecabTokenAgglutinator {
       // final: tokens[tokens.length-1],
       // tokens: [],
       wordList: [],
-    });
+    }).wordList;
 	}
 }

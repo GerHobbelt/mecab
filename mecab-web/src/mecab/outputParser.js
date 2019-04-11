@@ -36,10 +36,10 @@ export class MecabOutputParser {
       featureStr,
       ] = line.split('\t');
       const features = featureStr.split(',');
-      // // MeCab seems to have a non-guaranteed schema
-      // while (features.length <= 9) {
-      //   features.push('');
-      // }
+      // seems MeCab doesn't guarantee presence of reading and pronunciation
+      while (features.length <= 8) {
+        features.push(undefined);
+      }
       const [
       // surfaceLayerForm, // 表層形
       partOfSpeech, // 品詞
