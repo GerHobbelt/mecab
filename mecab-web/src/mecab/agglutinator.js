@@ -103,9 +103,8 @@ const Const = {
   KAKUJOSHI: '格助詞',
 
   NO_DATA: '*',
-};
 
-const Etc = {
+  // etc
   NA: 'な',
   NI: 'に',
   TE: 'て',
@@ -149,6 +148,10 @@ export class Word {
     this._nodeStr = nodeStr;
     this._token = token;
   }
+
+  get partOfSpeech() {
+    return this._partOfSpeech;
+  }
 }
 
 export class MecabTokenAgglutinator {
@@ -179,8 +182,10 @@ export class MecabTokenAgglutinator {
             case Const.KEIYOUDOUSHIGOKAN:
             case Const.NAIKEIYOUSHIGOKAN:
               // Refers to line 213 of Ve.
-              if(current.partOfSpeechSubclass2 === Const.NO_DATA) break;
-              if(i === tokenArray.length-1) break; // protects against array overshooting.
+              // TODO: is this guard really needed?
+              if (current.partOfSpeechSubclass2 === Const.NO_DATA) break;
+              if (i === tokenArray.length-1) break; // protects against array overshooting.
+
               const following = tokenArray[i+1];
               switch(following.utilizationType){
                 case Const.SAHEN_SURU:
@@ -208,26 +213,149 @@ export class MecabTokenAgglutinator {
                   break;
               }
               break;
+            case Const.HIJIRITSU:
+            case Const.TOKUSHU:
+              // Refers to line 233 of Ve.
+              if (current.partOfSpeechSubclass2 === Const.NO_DATA) break;
+              if (i === tokenArray.length-1) break; // protects against array overshooting.
 
+              const following = tokenArray[i+1];
+              switch(current.partOfSpeechSubclass2){
+                case Const.FUKUSHIKANOU:
+                  if(following.partOfSpeech === Const.JOSHI
+                    && following.surfaceForm === Const.NI){
+                    pos = Pos.Adverb;
+                    eat_next = false; // Changed this to false because 'case JOSHI' has 'attach_to_previous = true'.
+                  }
+                  break;
+                case Const.JODOUSHIGOKAN:
+                  if(following.inflectionType === Const.TOKUSHU_DA){
+                    pos = Pos.Verb;
+                    grammar = Grammar.Auxiliary;
+                    if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
+                      eat_next = true;
+                    }
+                  } else if (following.partOfSpeech === 'JOSHI'
+                    && following.partOfSpeechSubclass2 === Const.FUKUSHIKA){
+                    pos = Pos.Adverb;
+                    eat_next = true;
+                  }
+                  break;
+                case Const.KEIYOUDOUSHIGOKAN:
+                  pos = Pos.Adjective;
+                  // TODO: Java version called both of these inflectionType, but Ruby version calls the latter inflectionForm
+                  if((following.inflectionType === Const.TOKUSHU_DA
+                    && following.inflectionForm === Const.TAIGENSETSUZOKU)
+                    || following.partOfSpeechSubclass1 === Const.RENTAIKA) {
+                    eat_next = true;
+                  }
+                  break;
+                default:
+                  break;
+              }
+              break;
+            case Const.KAZU:
+              // TODO: "recurse and find following numbers and add to this word. Except non-numbers like 幾"
+              // Refers to line 261.
+              pos = Pos.Number;
+              if(wordList.length
+                && wordList[wordList.length-1].partOfSpeech === Pos.Number){
+                attach_to_previous = true;
+                also_attach_to_lemma = true;
+              }
+              break;
+            case Const.SETSUBI:
+              // Refers to line 267.
+              if(current.partOfSpeechSubclass2 === Const.JINMEI) {
+                pos = Pos.Suffix;
+              } else {
+                if(current.partOfSpeechSubclass2 === Const.TOKUSHU
+                  && current.lemma === Const.SA){
+                  update_pos = true;
+                  pos = Pos.Noun;
+                } else {
+                  also_attach_to_lemma = true;
+                }
+                attach_to_previous = true;
+              }
+              break;
+            case Const.SETSUZOKUSHITEKI:
+              pos = Pos.Conjunction;
+              break;
+            case Const.DOUSHIHIJIRITSUTEKI:
+              pos = Pos.Verb;
+              grammar = Grammar.Nominal; // not using.
+              break;
+            default:
+              // Keep Pos as Noun, as it currently is.
+              break;
           }
+          break;
+        case Const.SETTOUSHI:
+          // TODO: "elaborate this when we have the "main part" feature for words?"
+          pos = Pos.Prefix;
+          break;
+        case Const.JODOUSHI:
+          // Refers to line 290.
+          pos = Pos.Postposition;
+          const qualifyingList1 = [
+          Const.TOKUSHU_TA,
+          Const.TOKUSHU_NAI,
+          Const.TOKUSHU_TAI,
+          Const.TOKUSHU_MASU,
+          Const.TOKUSHU_NU
+          ];
+          if(previous === undefined
+            || previous.partOfSpeechSubclass1 !== Const.KAKARIJOSHI
+            && qualifyingList1.includes(current.inflectionType)) {
+            attach_to_previous = true;
+          } else if (current.inflectionType === Const.FUHENKAGATA
+            && current.lemma === Const.NN) {
+            attach_to_previous = true;
+          } else if (
+            // TODO: Java version overlooks logical operator precedence; using Ruby version
+            [
+            Const.TOKUSHU_DA,
+            Const.TOKUSHU_DESU
+            ].includes(current.inflectionType)
+            && current.surfaceForm !== Const.NA) {
+              pos = Pos.Verb;
+            }
+          break;
+        case Const.DOUSHI:
+          // Refers to line 299.
+          pos = Pos.Verb;
+          switch (current.partOfSpeechSubclass1){
+            case Const.SETSUBI:
+              attach_to_previous = true;
+              break;
+            case Const.HIJIRITSU:
+              if (current.inflectionForm !== Const.MEIREI_I) {
+                attach_to_previous = true;
+              }
+            default:
+              break;
+          }
+          break;
       }
 
       if (eat_next) {
         // return {
         //   ...acc,
-        //   prev: current,
+        //   previous: current,
         //   tokens: [...acc.tokens, ],
         // };
       }
       return {
         ...acc,
-        prev: current,
+        previous: current,
       }
     }, {
-      prev: undefined,
-      following: undefined,
-      final: tokens[tokens.length-1],
-      tokens: [],
+      previous: undefined,
+      // following: undefined,
+      // final: tokens[tokens.length-1],
+      // tokens: [],
+      wordList: [],
     });
 	}
 }
