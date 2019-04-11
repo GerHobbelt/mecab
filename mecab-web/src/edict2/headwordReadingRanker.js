@@ -24,6 +24,7 @@ export class HeadwordReadingRanker {
 
   _classifyRelevanceHeadwordReading(headword, readingTuple) {
     const { reading } = readingTuple;
+    const { readingHiragana } = this._mecabToken;
     const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
     let relevance = 0;
     if (headword === term) {

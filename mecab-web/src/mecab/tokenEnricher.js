@@ -11,12 +11,12 @@ export class MecabTokenEnricher {
     return this._wanakana.toHiragana(mecabToken.reading, { passRomaji: false });
   }
 
-  _getSubtokens(readingHiragana, { surfaceLayerForm, partOfSpeech }) {
+  _getSubtokens(readingHiragana, { surfaceLayerForm, partOfSpeech, partOfSpeechSubclass1 }) {
     return this._furiganaFitter.fitFurigana(
       surfaceLayerForm,
       readingHiragana,
       partOfSpeech === '名詞' // noun
-      && partOfSpeechSubcategory1 === '固有名詞' // if proper noun, treat as name
+      && partOfSpeechSubclass1 === '固有名詞' // if proper noun, treat as name
       );
   }
 

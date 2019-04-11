@@ -147,6 +147,8 @@ export class Word {
     this._part_of_speech = part_of_speech; // eg. Pos.Noun
     this._word = nodeStr; // "聞かせられ"
     this._token = token;
+    
+    this._tokens = [token];
   }
 
   set part_of_speech(value) {
@@ -221,8 +223,8 @@ export class MecabTokenAgglutinator {
         case Const.MEISHI:
         // case Const.MICHIGO:
           pos = Pos.Noun;
-          if (partOfSpeechSubclass1 === Const.NO_DATA) break;
-          switch(partOfSpeechSubclass1) {
+          if (current.partOfSpeechSubclass1 === Const.NO_DATA) break;
+          switch(current.partOfSpeechSubclass1) {
             case Const.KOYUUMEISHI:
               pos = Pos.ProperNoun;
               break;
@@ -238,31 +240,33 @@ export class MecabTokenAgglutinator {
               if (current.partOfSpeechSubclass2 === Const.NO_DATA) break;
               if (i === tokenArray.length-1) break; // protects against array overshooting.
 
-              const following = tokenArray[i+1];
-              switch(following.utilizationType){
-                case Const.SAHEN_SURU:
-                  pos = Pos.Verb;
-                  eat_next = true;
-                  break;
-                case Const.TOKUSHU_DA:
-                  pos = Pos.Adjective;
-                  // Using inflectionForm as in Ruby script, whereas Java used partOfSpeechSubclass1
-                  // https://github.com/Kimtaro/ve/blob/master/lib/providers/mecab_ipadic.rb#L207
-                  if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
+              {
+                const following = tokenArray[i+1];
+                switch(following.utilizationType){
+                  case Const.SAHEN_SURU:
+                    pos = Pos.Verb;
                     eat_next = true;
-                    eat_lemma = false;
-                  }
-                  break;
-                case Const.TOKUSHU_NAI:
-                  pos = Pos.Adjective;
-                  eat_next = true;
-                  break;
-                default:
-                  if (following.partOfSpeech === Const.JOSHI
-                    && following.surfaceForm === Const.NI) {
-                    pos = Pos.Adverb; // Ve script redundantly (I think) also has eat_next = false here.  
-                  }
-                  break;
+                    break;
+                  case Const.TOKUSHU_DA:
+                    pos = Pos.Adjective;
+                    // Using inflectionForm as in Ruby script, whereas Java used partOfSpeechSubclass1
+                    // https://github.com/Kimtaro/ve/blob/master/lib/providers/mecab_ipadic.rb#L207
+                    if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
+                      eat_next = true;
+                      eat_lemma = false;
+                    }
+                    break;
+                  case Const.TOKUSHU_NAI:
+                    pos = Pos.Adjective;
+                    eat_next = true;
+                    break;
+                  default:
+                    if (following.partOfSpeech === Const.JOSHI
+                      && following.surfaceForm === Const.NI) {
+                      pos = Pos.Adverb; // Ve script redundantly (I think) also has eat_next = false here.  
+                    }
+                    break;
+                }
               }
               break;
             case Const.HIJIRITSU:
@@ -271,39 +275,41 @@ export class MecabTokenAgglutinator {
               if (current.partOfSpeechSubclass2 === Const.NO_DATA) break;
               if (i === tokenArray.length-1) break; // protects against array overshooting.
 
-              const following = tokenArray[i+1];
-              switch(current.partOfSpeechSubclass2){
-                case Const.FUKUSHIKANOU:
-                  if (following.partOfSpeech === Const.JOSHI
-                    && following.surfaceForm === Const.NI){
-                    pos = Pos.Adverb;
-                    eat_next = false; // Changed this to false because 'case JOSHI' has 'attach_to_previous = true'.
-                  }
-                  break;
-                case Const.JODOUSHIGOKAN:
-                  if (following.inflectionType === Const.TOKUSHU_DA){
-                    pos = Pos.Verb;
-                    grammar = Grammar.Auxiliary;
-                    if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
+              {
+                const following = tokenArray[i+1];
+                switch(current.partOfSpeechSubclass2){
+                  case Const.FUKUSHIKANOU:
+                    if (following.partOfSpeech === Const.JOSHI
+                      && following.surfaceForm === Const.NI){
+                      pos = Pos.Adverb;
+                      eat_next = false; // Changed this to false because 'case JOSHI' has 'attach_to_previous = true'.
+                    }
+                    break;
+                  case Const.JODOUSHIGOKAN:
+                    if (following.inflectionType === Const.TOKUSHU_DA){
+                      pos = Pos.Verb;
+                      grammar = Grammar.Auxiliary;
+                      if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
+                        eat_next = true;
+                      }
+                    } else if (following.partOfSpeech === 'JOSHI'
+                      && following.partOfSpeechSubclass2 === Const.FUKUSHIKA){
+                      pos = Pos.Adverb;
                       eat_next = true;
                     }
-                  } else if (following.partOfSpeech === 'JOSHI'
-                    && following.partOfSpeechSubclass2 === Const.FUKUSHIKA){
-                    pos = Pos.Adverb;
-                    eat_next = true;
-                  }
-                  break;
-                case Const.KEIYOUDOUSHIGOKAN:
-                  pos = Pos.Adjective;
-                  // TODO: Java version called both of these inflectionType, but Ruby version calls the latter inflectionForm
-                  if ((following.inflectionType === Const.TOKUSHU_DA
-                    && following.inflectionForm === Const.TAIGENSETSUZOKU)
-                    || following.partOfSpeechSubclass1 === Const.RENTAIKA) {
-                    eat_next = true;
-                  }
-                  break;
-                default:
-                  break;
+                    break;
+                  case Const.KEIYOUDOUSHIGOKAN:
+                    pos = Pos.Adjective;
+                    // TODO: Java version called both of these inflectionType, but Ruby version calls the latter inflectionForm
+                    if ((following.inflectionType === Const.TOKUSHU_DA
+                      && following.inflectionForm === Const.TAIGENSETSUZOKU)
+                      || following.partOfSpeechSubclass1 === Const.RENTAIKA) {
+                      eat_next = true;
+                    }
+                    break;
+                  default:
+                    break;
+                }
               }
               break;
             case Const.KAZU:
@@ -458,7 +464,7 @@ export class MecabTokenAgglutinator {
           pronunciation: current.pronunication,
           grammar,
           basic: current.lemma,
-          partOfSpeech: pos,
+          part_of_speech: pos,
           nodeStr: current.surfaceForm,
           token: current,
         });
