@@ -50,7 +50,7 @@ export class MecabOutputParser {
       inflectionForm, // 活用形
       lemma, // 原形
       reading, // 読み
-      pronunication, // 発音
+      pronunciation, // 発音
       ] = features;
       return {
         surfaceLayerForm, // token
@@ -62,7 +62,7 @@ export class MecabOutputParser {
         inflectionForm,
         lemma,
         reading,
-        pronunication,
+        pronunciation,
         isWhitespace: false,
       }
     });

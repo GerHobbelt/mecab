@@ -124,7 +124,7 @@ CTYPE = 4; // inflectionType
 CFORM = 5; // inflectionForm
 BASIC = 6; // lemma
 READING = 7; // reading
-PRONUNCIATION = 8; // pronunication
+PRONUNCIATION = 8; // pronunciation
 
 Token#getAllFeaturesArray()[POS1]
 mecabToken.partOfSpeech
@@ -262,7 +262,7 @@ export class MecabTokenAgglutinator {
                     break;
                   default:
                     if (following.partOfSpeech === Const.JOSHI
-                      && following.surfaceForm === Const.NI) {
+                      && following.surfaceLayerForm === Const.NI) {
                       pos = Pos.Adverb; // Ve script redundantly (I think) also has eat_next = false here.  
                     }
                     break;
@@ -280,7 +280,7 @@ export class MecabTokenAgglutinator {
                 switch(current.partOfSpeechSubclass2){
                   case Const.FUKUSHIKANOU:
                     if (following.partOfSpeech === Const.JOSHI
-                      && following.surfaceForm === Const.NI){
+                      && following.surfaceLayerForm === Const.NI){
                       pos = Pos.Adverb;
                       eat_next = false; // Changed this to false because 'case JOSHI' has 'attach_to_previous = true'.
                     }
@@ -317,7 +317,7 @@ export class MecabTokenAgglutinator {
               // Refers to line 261.
               pos = Pos.Number;
               if (acc.wordList.length
-                && acc.wordList[acc.wordList.length-1].partOfSpeech === Pos.Number){
+                && acc.wordList[acc.wordList.length-1].part_of_speech === Pos.Number){
                 attach_to_previous = true;
                 also_attach_to_lemma = true;
               }
@@ -376,7 +376,7 @@ export class MecabTokenAgglutinator {
             Const.TOKUSHU_DA,
             Const.TOKUSHU_DESU,
             ].includes(current.inflectionType)
-            && current.surfaceForm !== Const.NA) {
+            && current.surfaceLayerForm !== Const.NA) {
               pos = Pos.Verb;
             }
           break;
@@ -408,8 +408,8 @@ export class MecabTokenAgglutinator {
           ];
           // Java version adds NI to this, but let's start by following Ruby version.
           if (current.partOfSpeechSubclass1 === Const.SETSUZOKUJOSHI
-            && qualifyingList2.includes(current.surfaceForm)
-            // || current.surfaceForm === Const.NI
+            && qualifyingList2.includes(current.surfaceLayerForm)
+            // || current.surfaceLayerForm === Const.NI
             ) {
               attach_to_previous = true;
             }
@@ -439,17 +439,17 @@ export class MecabTokenAgglutinator {
       }
 
       const getFeatureSafely = (token, feature) => {
-        if (token.feature === undefined) {
+        if (token[feature] === undefined) {
           return '*';
         }
-        return token.feature;
+        return token[feature];
       };
 
       if (attach_to_previous && acc.wordList.length){
         const finalWord = acc.wordList[acc.wordList.length-1];
         // these sometimes try to add to null readings.
         finalWord.addToken(current);
-        finalWord.appendToWord(current.surfaceForm);
+        finalWord.appendToWord(current.surfaceLayerForm);
         finalWord.appendToReading(getFeatureSafely(current, 'reading'));
         finalWord.appendToTranscription(getFeatureSafely(current, 'pronunciation'));
         if (also_attach_to_lemma) {
@@ -461,11 +461,11 @@ export class MecabTokenAgglutinator {
       } else {
         const word = new Word({
           read: current.reading,
-          pronunciation: current.pronunication,
+          pronunciation: current.pronunciation,
           grammar,
           basic: current.lemma,
           part_of_speech: pos,
-          nodeStr: current.surfaceForm,
+          nodeStr: current.surfaceLayerForm,
           token: current,
         });
         if (eat_next){
@@ -474,7 +474,7 @@ export class MecabTokenAgglutinator {
           }
           const following = tokenArray[i+1];
           word.addToken(following);
-          word.appendToWord(following.surfaceForm);
+          word.appendToWord(following.surfaceLayerForm);
           word.appendToReading(following.reading);
           word.appendToTranscription(getFeatureSafely(following, 'pronunciation'));
           if (eat_lemma) {
