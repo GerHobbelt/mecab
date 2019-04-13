@@ -127,7 +127,7 @@ export class FuriganaFitter {
   }
 
   _fitReadingToRegex(
-    token,
+    surfaceLayerForm,
     readingHiragana,
     subtokens,
     regExStr,
@@ -137,7 +137,7 @@ export class FuriganaFitter {
 
     const matches = regEx.exec(readingHiragana);
     if (!matches) {
-      console.error(`We were unable to match the hiragana reading '${readingHiragana}' to token '${token}'. We used RegExp /${regExStr}/.`);
+      console.error(`We were unable to match the hiragana reading '${readingHiragana}' to surfaceLayerForm '${surfaceLayerForm}'. We used RegExp /${regExStr}/.`);
       return subtokens;
     }
 
@@ -200,18 +200,18 @@ export class FuriganaFitter {
     };
   }
 
-  fitFurigana(token, readingHiragana, isName) {
-    const subtokens = this._wanakana.tokenize(token, { detailed: true });
+  fitFurigana(surfaceLayerForm, readingHiragana, isName) {
+    const subtokens = this._wanakana.tokenize(surfaceLayerForm, { detailed: true });
     // if there's no kanji, then there's nothing to fit furigana to
     // and if there's anything other than kanji+hiragana, then our "strip okurigana" tactic won't work.
     if (!subtokens.some((subtoken) => ['kanji'].includes(subtoken.type))
       || subtokens.some((subtoken) => !['kanji', 'hiragana'].includes(subtoken.type))) {
-      // console.error(`token ${token} has non-kanji or non-hiragana subtokens.`);
+      // console.error(`surfaceLayerForm ${surfaceLayerForm} has non-kanji or non-hiragana subtokens.`);
       // we're only interested in fitting a hiragana reading to kanji words that (may) have okurigana.
       // we're not interested in fitting our hiragana reading to a katakana or English word, for example.
       return subtokens;
     }
-    if (token === readingHiragana) {
+    if (surfaceLayerForm === readingHiragana) {
       return subtokens;
     }
     const regExStr = this._makeRegex(
@@ -219,7 +219,7 @@ export class FuriganaFitter {
       isName);
 
     return this._fitReadingToRegex(
-      token,
+      surfaceLayerForm,
       readingHiragana,
       subtokens,
       regExStr,

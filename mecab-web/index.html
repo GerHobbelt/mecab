@@ -27,6 +27,7 @@
     <h1>MeCab in WebAssembly</h1>
     <p><a href="https://taku910.github.io/mecab/">MeCab, the Japanese morphological analyser by Taku Kudo</a> compiled to WebAssembly.<br>References prior <a href="https://github.com/fasiha/mecab-emscripten">emscripten example by fasiha</a>.<br><br>Uses <a href="https://ja.osdn.net/projects/naist-jdic/wiki/FrontPage">NAIST-jdic</a> as dataset for MeCab.<br>Uses <a href="https://github.com/WaniKani/WanaKana">WanaKana</a> for transliteration, additional tokenization, and classification.<br>
       Uses <a href="https://jisho.org/about">Jisho</a> for external dictionary lookup &ndash; created by Kim Ahlström, Miwa Ahlström and Andrew Plummer.<br>
+      Uses <a href="https://github.com/Kimtaro/ve">Ve</a>'s algorithm for agglutinating tokens into words &ndash; created by Kim Ahlström.<br>
       Uses <a href="http://www.edrdg.org/jmdict/edict_doc.html">EDICT2</a> and <a href="http://www.edrdg.org/enamdict/enamdict_doc.html">ENAMDICT</a> for embedded dictionary lookup &ndash; created by Jim Breen.<br>
     
     <div><small>See <a href="licenses.html">Licenses</a></small></div>
@@ -176,7 +177,8 @@ This webpage combines language technologies to suggest where to insert spaces,<b
           }
           if (!state.termResults.key) {
             actions.chooseTerm({
-              token: '双子',
+              surfaceLayerForm: '双子',
+              readingHiragana: 'ふたご',
             });
           }
         }

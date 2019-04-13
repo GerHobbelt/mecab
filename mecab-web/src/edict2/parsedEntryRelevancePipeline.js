@@ -34,7 +34,7 @@ export class ParsedEntryRelevanceClassifier {
   }
 
   classifyRelevance(mecabToken, parsedEntry) {
-    const { token, readingHiragana, dictionaryForm } = mecabToken;
+    const { readingHiragana } = mecabToken;
     const term = this._searchTermRecommender.getRecommendedSearchTerm(mecabToken);
     // console.warn(term);
     // console.warn(results);

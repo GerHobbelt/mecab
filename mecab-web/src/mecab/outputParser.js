@@ -1,8 +1,9 @@
 export class SearchTermRecommender {
   /** Decide our preference / fallback */
-  getRecommendedSearchTerm(mecabToken) {
-    const { token, readingHiragana, dictionaryForm } = mecabToken;
-    return dictionaryForm || token;
+  getRecommendedSearchTerm(mecabTokenLike) {
+    return mecabTokenLike.lemma
+    || mecabTokenLike.inflectionForm
+    || mecabTokenLike.surfaceLayerForm;
   }
 }
 
@@ -31,36 +32,38 @@ export class MecabOutputParser {
     .split('\n')
     .filter(x => x)
     .map((line) => {
-      const [token, featureStr] = line.split('\t');
-      const features = featureStr.split(',');
-      // MeCab seems to have a non-guaranteed schema
-      while (features.length <= 9) {
-        features.push('');
-      }
       const [
       surfaceLayerForm, // 表層形
+      featureStr,
+      ] = line.split('\t');
+      const features = featureStr.split(',');
+      // seems MeCab doesn't guarantee presence of reading and pronunciation
+      while (features.length <= 8) {
+        features.push(undefined);
+      }
+      const [
+      // surfaceLayerForm, // 表層形
       partOfSpeech, // 品詞
-      partOfSpeechSubcategory1, // 品詞細分類1
-      partOfSpeechSubcategory2, // 品詞細分類2
-      partOfSpeechSubcategory3, // 品詞細分類3
-      utilizationType, // 活用型
-      dictionaryForm, // 活用形
-      originalForm, // 原形
+      partOfSpeechSubclass1, // 品詞細分類1
+      partOfSpeechSubclass2, // 品詞細分類2
+      partOfSpeechSubclass3, // 品詞細分類3
+      inflectionType, // 活用型
+      inflectionForm, // 活用形
+      lemma, // 原形
       reading, // 読み
-      pronunication, // 発音
+      pronunciation, // 発音
       ] = features;
       return {
-        token,
-        surfaceLayerForm,
+        surfaceLayerForm, // token
         partOfSpeech,
-        partOfSpeechSubcategory1,
-        partOfSpeechSubcategory2,
-        partOfSpeechSubcategory3,
-        utilizationType,
-        dictionaryForm,
-        originalForm,
+        partOfSpeechSubclass1,
+        partOfSpeechSubclass2,
+        partOfSpeechSubclass3,
+        inflectionType,
+        inflectionForm,
+        lemma,
         reading,
-        pronunication,
+        pronunciation,
         isWhitespace: false,
       }
     });

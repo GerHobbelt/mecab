@@ -48,7 +48,7 @@ const actions = (store) => ({
       }
     };
   },
-  chooseTerm(state, mecabToken) {
+  chooseTerm(state, mecabTokenLike) {
     if (!state.languageTools) {
       return state;
     }
@@ -57,21 +57,21 @@ const actions = (store) => ({
       mecabPipeline,
       furiganaFitter,
     } = state.languageTools;
-    let subtokens = mecabToken.subtokens;
-    if (!mecabToken.subtokens) {
-      // if (mecabToken.readingHiragana) {
+    let subtokens = mecabTokenLike.subtokens;
+    if (!mecabTokenLike.subtokens) {
+      // if (mecabTokenLike.readingHiragana) {
       //   subtokens = furiganaFitter.fitFurigana(
-      //     mecabToken.token,
-      //     mecabToken.readingHiragana);
+      //     mecabTokenLike.surfaceLayerForm,
+      //     mecabTokenLike.readingHiragana);
       // } else {
-      //   subtokens = tokenize(mecabToken.token, { detailed: true });
+      //   subtokens = tokenize(mecabTokenLike.surfaceLayerForm, { detailed: true });
       // }
       subtokens = furiganaFitter.fitFurigana(
-        mecabToken.token,
-        mecabToken.readingHiragana || mecabToken.token);
+        mecabTokenLike.surfaceLayerForm,
+        mecabTokenLike.readingHiragana || mecabTokenLike.surfaceLayerForm);
     }
     const standardizedToken = {
-      ...mecabToken,
+      ...mecabTokenLike,
       subtokens,
     }
     if (getTermKey(standardizedToken) === getTermKey(state.termResults.key || {})) {
@@ -95,11 +95,12 @@ const actions = (store) => ({
 });
 
 /** Just a way to check whether we're looking up the same entry twice */
-function getTermKey({ token, readingHiragana, dictionaryForm }) {
+function getTermKey({ surfaceLayerForm, readingHiragana, inflectionForm, lemma }) {
   return JSON.stringify({
-    token,
+    surfaceLayerForm,
     readingHiragana,
-    dictionaryForm,
+    inflectionForm,
+    lemma,
   });
 }
 
@@ -129,13 +130,14 @@ const Rubied = ({ theValue, reading }) => {
   `
   };
 
-const Word = ({ classList, mecabToken }) => {
+const Word = ({ classList, mecabTokenLike }) => {
   const {
-    token,
+    surfaceLayerForm,
     subtokens,
     readingHiragana,
-    dictionaryForm
-    } = mecabToken;
+    inflectionForm,
+    lemma,
+    } = mecabTokenLike;
   const reducedSubtokens = subtokens.reduce(({
     bufferedText,
     output,
@@ -169,15 +171,13 @@ const Word = ({ classList, mecabToken }) => {
     output = boundHtmlConcat(output, reducedSubtokens.bufferedText);
   }
 
-  // data-readingHiragana=${readingHiragana}
-  // data-dictionaryForm=${dictionaryForm}
-
   return html`
   <span
   class=${classList || ''}
-  data-token=${token}
+  data-surface-layer-form=${surfaceLayerForm}
   data-reading-hiragana=${readingHiragana}
-  data-dictionary-form=${dictionaryForm}
+  data-inflection-form=${inflectionForm}
+  data-lemma=${lemma}
   >${output}<//>
   `
   };
@@ -210,11 +210,11 @@ const Definition = connect('termResults,languageTools', actions)(
 
     const renderReadingTuple = (classList, headword, readingTuple) => {
       const mecabTokenLike = {
-        token: headword,
+        surfaceLayerForm: headword,
         subtokens: readingTuple.subtokens,
       };
       return html`
-      <${Word} classList=${classList} mecabToken=${mecabTokenLike} />
+      <${Word} classList=${classList} mecabTokenLike=${mecabTokenLike} />
       `;
     };
 
@@ -273,12 +273,6 @@ const Definition = connect('termResults,languageTools', actions)(
           || reading !== bestHeadwordReading.readingTuple.reading),
       }))
       .filter(({ readingTuples }) => readingTuples.length);
-      // console.log(remainingTuples)
-
-      // const mecabTokenLike = {
-      //   token: headword,
-      //   subtokens: readingTuple.subtokens,
-      // };
 
       return html`
       <div class="hero-container">
@@ -308,10 +302,9 @@ const Definition = connect('termResults,languageTools', actions)(
     <div>
       <div class="results-header">
       Dictionary results for 
-        '<${Word} classList="" mecabToken=${termResults.key} />'
-        ${termResults.key.dictionaryForm
-          && termResults.key.dictionaryForm !== termResults.key.token
-          && ` (dictionary form: '${termResults.key.dictionaryForm}')`}
+        '<${Word} classList="" mecabTokenLike=${termResults.key} />'
+        ${term !== termResults.key.surfaceLayerForm
+          && ` (dictionary form: '${term}')`}
       <//>
       <div class="jisho-lookup">
       Look up <a href=${
@@ -336,12 +329,12 @@ const Sentence = ({ nodes, order }) => {
   const renderNode = (acc, node) => {
     if (node.isWhitespace) {
       return {
-        output: boundHtmlConcat(acc.output, node.token),
+        output: boundHtmlConcat(acc.output, node.surfaceLayerForm),
       };
     }
 
     return {
-      output: html`${acc.output}<${Word} classList="token4" mecabToken=${node} />`,
+      output: html`${acc.output}<${Word} classList="token4" mecabTokenLike=${node} />`,
     };
   };
 
@@ -388,13 +381,14 @@ const App = connect('languageTools,parses,initialQuery,termResults', actions)(
       : event.target.closest('.token4');
       // console.log(tokenNode);
       if (tokenNode) {
-        const token = tokenNode.getAttribute('data-token');
-        if (token) {
+        const surfaceLayerForm = tokenNode.getAttribute('data-surface-layer-form');
+        if (surfaceLayerForm) {
           event.stopPropagation();
           const mecabToken = {
-            token,
+            surfaceLayerForm,
             readingHiragana: tokenNode.getAttribute('data-reading-hiragana'),
-            dictionaryForm: tokenNode.getAttribute('data-dictionary-form'),
+            inflectionForm: tokenNode.getAttribute('data-inflection-form'),
+            lemma: tokenNode.getAttribute('data-lemma'),
           };
           chooseTerm(mecabToken);
         }

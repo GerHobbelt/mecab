@@ -19,7 +19,7 @@ export class HeadwordReadingResolver {
    * かあ /(n) cawing (of a crow)/EntL2076470X/
    * Some headwords have no readings (e.g. if there's no kanji).
    */
-  getHeadwordReadingCombinations(headwords, readings) {
+  getHeadwordReadings(headwords, readings) {
     const headwordForms = headwords.map((headword) => headword.form);
     return readings.reduce((acc, reading) => {
       return acc.concat(
@@ -54,7 +54,7 @@ export class HeadwordReadingResolver {
 }
 
 export class HeadwordReadingSorter {
-  groupHeadwordReadingCombinations(tuples) {
+  groupHeadwordReadings(tuples) {
     return tuples.reduce((
       acc,
       {
@@ -114,13 +114,13 @@ export class HeadwordReadingPipeline {
 
   withHeadwordReadings(parsedEntry) {
     const headwordReadings = this._headwordReadingSorter.withHeadwordReadingsSorted(
-      this._headwordReadingSorter.groupHeadwordReadingCombinations(
-        this._headwordReadingResolver.getHeadwordReadingCombinations(
+      this._headwordReadingSorter.groupHeadwordReadings(
+        this._headwordReadingResolver.getHeadwordReadings(
           parsedEntry.headwords,
           parsedEntry.readings)));
 
     const bestHeadwordReading
-    = this._headwordReadingRanker.getMostRelevantHeadwordReadingCombination(headwordReadings);
+    = this._headwordReadingRanker.getMostRelevantHeadwordReading(headwordReadings);
 
     return {
       ...parsedEntry,
