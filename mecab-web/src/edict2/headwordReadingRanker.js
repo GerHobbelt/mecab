@@ -36,12 +36,12 @@ export class HeadwordReadingRanker {
     if (reading === readingHiragana) {
       relevance++;
     }
-    console.log(
-      term,
-      headword,
-      reading,
-      relevance,
-      )
+    // console.log(
+    //   term,
+    //   headword,
+    //   reading,
+    //   relevance,
+    //   )
     return relevance;
   }
 
