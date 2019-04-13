@@ -19,6 +19,7 @@ export class MecabPipeline {
     const mecabOutput = this._mecab.query(sentence)
     const nominalTokens = this._mecabOutputParser.parse(mecabOutput);
     const veWords = this._tokenAgglutinator.agglutinate(nominalTokens);
+    console.log(veWords);
     const withHiraganaReadings = this._hiraganaReadingAdder.withHiraganaReadings(veWords);
     const withFuriganaFitted = this._veWordFuriganaFitter.withFuriganaFitted(withHiraganaReadings);
     const withWhitespace = this._whitespaceInterposer.withWhitespacesSplicedBackIn(withFuriganaFitted, sentence);

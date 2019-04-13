@@ -37,73 +37,51 @@ export class Word {
     lemma,
     partOfSpeechVe,
     surfaceLayerForm,
-    token,
+    tokens,
   }) {
-    this._reading = reading;
-    this._pronunciation = pronunciation;
-    this._grammar = grammar;
-    this._lemma = lemma; // "聞く"
-    this._partOfSpeechVe = partOfSpeechVe; // eg. Pos.Noun
-    this._surfaceLayerForm = surfaceLayerForm; // "聞かせられ"
-    this._token = token;
-
-    this._tokens = [token];
-  }
-
-  set partOfSpeechVe(value) {
-    this._partOfSpeechVe = value;
-  }
-
-  get partOfSpeechVe() {
-    return this._partOfSpeechVe;
-  }
-
-  get tokens() {
-    return this._tokens;
-  }
-
-  get surfaceLayerForm() {
-    return this._surfaceLayerForm;
-  }
-
-  get lemma() {
-    return this._lemma;
+    this.reading = reading;
+    this.pronunciation = pronunciation;
+    this.grammar = grammar;
+    this.lemma = lemma; // "聞く"
+    this.partOfSpeechVe = partOfSpeechVe; // eg. Pos.Noun
+    this.surfaceLayerForm = surfaceLayerForm; // "聞かせられ"
+    this.tokens = tokens;
   }
 
   toString() {
-    return this._surfaceLayerForm;
+    return this.surfaceLayerForm;
   }
 
   addToken(token) {
-    this._tokens.push(token);
+    this.tokens.push(token);
   }
 
   appendToSurfaceLayerForm(suffix) {
-    if (this._surfaceLayerForm === undefined) {
-      this._surfaceLayerForm = "_"; // likely won't experience a null word, actually.
+    if (this.surfaceLayerForm === undefined) {
+      this.surfaceLayerForm = "_"; // likely won't experience a null word, actually.
     }
-    this._surfaceLayerForm += suffix;
+    this.surfaceLayerForm += suffix;
   }
 
   appendToReading(suffix) {
-    if (this._reading === undefined) {
-      this._reading = "_";
+    if (this.reading === undefined) {
+      this.reading = "_";
     }
-    this._reading += suffix;
+    this.reading += suffix;
   }
 
   appendToPronunciation(suffix) {
-    if (this._pronunciation === undefined) {
-      this._pronunciation = "_";
+    if (this.pronunciation === undefined) {
+      this.pronunciation = "_";
     }
-    this._pronunciation += suffix;
+    this.pronunciation += suffix;
   }
 
   appendToLemma(suffix) {
-    if (this._lemma === undefined) {
-      this._lemma = "_";
+    if (this.lemma === undefined) {
+      this.lemma = "_";
     }
-    this._lemma += suffix;
+    this.lemma += suffix;
   }
 }
 
@@ -365,7 +343,7 @@ export class MecabTokenAgglutinator {
           lemma: current.lemma,
           partOfSpeechVe: pos,
           surfaceLayerForm: current.surfaceLayerForm,
-          token: current,
+          tokens: [current],
         });
         if (eatNext){
           if (i === tokenArray.length-1) {

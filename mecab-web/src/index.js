@@ -48,7 +48,7 @@ const actions = (store) => ({
       }
     };
   },
-  chooseTerm(state, mecabToken) {
+  chooseTerm(state, mecabTokenLike) {
     if (!state.languageTools) {
       return state;
     }
@@ -57,21 +57,21 @@ const actions = (store) => ({
       mecabPipeline,
       furiganaFitter,
     } = state.languageTools;
-    let subtokens = mecabToken.subtokens;
-    if (!mecabToken.subtokens) {
-      // if (mecabToken.readingHiragana) {
+    let subtokens = mecabTokenLike.subtokens;
+    if (!mecabTokenLike.subtokens) {
+      // if (mecabTokenLike.readingHiragana) {
       //   subtokens = furiganaFitter.fitFurigana(
-      //     mecabToken.token,
-      //     mecabToken.readingHiragana);
+      //     mecabTokenLike.surfaceLayerForm,
+      //     mecabTokenLike.readingHiragana);
       // } else {
-      //   subtokens = tokenize(mecabToken.token, { detailed: true });
+      //   subtokens = tokenize(mecabTokenLike.surfaceLayerForm, { detailed: true });
       // }
       subtokens = furiganaFitter.fitFurigana(
-        mecabToken.token,
-        mecabToken.readingHiragana || mecabToken.token);
+        mecabTokenLike.surfaceLayerForm,
+        mecabTokenLike.readingHiragana || mecabTokenLike.surfaceLayerForm);
     }
     const standardizedToken = {
-      ...mecabToken,
+      ...mecabTokenLike,
       subtokens,
     }
     if (getTermKey(standardizedToken) === getTermKey(state.termResults.key || {})) {
@@ -95,11 +95,12 @@ const actions = (store) => ({
 });
 
 /** Just a way to check whether we're looking up the same entry twice */
-function getTermKey({ surfaceLayerForm, readingHiragana, inflectionForm }) {
+function getTermKey({ surfaceLayerForm, readingHiragana, inflectionForm, lemma }) {
   return JSON.stringify({
     surfaceLayerForm,
     readingHiragana,
     inflectionForm,
+    lemma,
   });
 }
 
@@ -129,13 +130,14 @@ const Rubied = ({ theValue, reading }) => {
   `
   };
 
-const Word = ({ classList, mecabToken }) => {
+const Word = ({ classList, mecabTokenLike }) => {
   const {
     surfaceLayerForm,
     subtokens,
     readingHiragana,
-    inflectionForm
-    } = mecabToken;
+    inflectionForm,
+    lemma,
+    } = mecabTokenLike;
   const reducedSubtokens = subtokens.reduce(({
     bufferedText,
     output,
@@ -175,6 +177,7 @@ const Word = ({ classList, mecabToken }) => {
   data-surface-layer-form=${surfaceLayerForm}
   data-reading-hiragana=${readingHiragana}
   data-inflection-form=${inflectionForm}
+  data-lemma=${lemma}
   >${output}<//>
   `
   };
@@ -211,7 +214,7 @@ const Definition = connect('termResults,languageTools', actions)(
         subtokens: readingTuple.subtokens,
       };
       return html`
-      <${Word} classList=${classList} mecabToken=${mecabTokenLike} />
+      <${Word} classList=${classList} mecabTokenLike=${mecabTokenLike} />
       `;
     };
 
@@ -299,10 +302,9 @@ const Definition = connect('termResults,languageTools', actions)(
     <div>
       <div class="results-header">
       Dictionary results for 
-        '<${Word} classList="" mecabToken=${termResults.key} />'
-        ${termResults.key.inflectionForm
-          && termResults.key.inflectionForm !== termResults.key.surfaceLayerForm
-          && ` (dictionary form: '${termResults.key.inflectionForm}')`}
+        '<${Word} classList="" mecabTokenLike=${termResults.key} />'
+        ${term !== termResults.key.surfaceLayerForm
+          && ` (dictionary form: '${term}')`}
       <//>
       <div class="jisho-lookup">
       Look up <a href=${
@@ -332,7 +334,7 @@ const Sentence = ({ nodes, order }) => {
     }
 
     return {
-      output: html`${acc.output}<${Word} classList="token4" mecabToken=${node} />`,
+      output: html`${acc.output}<${Word} classList="token4" mecabTokenLike=${node} />`,
     };
   };
 
@@ -386,6 +388,7 @@ const App = connect('languageTools,parses,initialQuery,termResults', actions)(
             surfaceLayerForm,
             readingHiragana: tokenNode.getAttribute('data-reading-hiragana'),
             inflectionForm: tokenNode.getAttribute('data-inflection-form'),
+            lemma: tokenNode.getAttribute('data-lemma'),
           };
           chooseTerm(mecabToken);
         }

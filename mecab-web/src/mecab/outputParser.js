@@ -1,8 +1,9 @@
 export class SearchTermRecommender {
   /** Decide our preference / fallback */
-  getRecommendedSearchTerm(mecabToken) {
-    const { surfaceLayerForm, readingHiragana, inflectionForm } = mecabToken;
-    return inflectionForm || surfaceLayerForm;
+  getRecommendedSearchTerm(mecabTokenLike) {
+    return mecabTokenLike.lemma
+    || mecabTokenLike.inflectionForm
+    || mecabTokenLike.surfaceLayerForm;
   }
 }
 
