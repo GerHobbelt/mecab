@@ -1,4 +1,4 @@
-// import { tokenize } from '../web_modules/wanakana.js';
+import { tokenize } from '../web_modules/wanakana.js';
 // import { kanjidic2Lookup } from './kanjidic2/index.js';
 // import { edictLookup, getSearchTerm } from './edict2/index.js';
 import { SearchTermRecommender } from './mecab/index.js';
@@ -58,21 +58,19 @@ const actions = (store) => ({
       furiganaFitter,
     } = state.languageTools;
 
-    const term = new SearchTermRecommender()
-    .getRecommendedSearchTerm(mecabTokenLike);
-
     let subtokens = mecabTokenLike.subtokens;
     if (!mecabTokenLike.subtokens) {
-      // if (mecabTokenLike.readingHiragana) {
-      //   subtokens = furiganaFitter.fitFurigana(
-      //     mecabTokenLike.surfaceLayerForm,
-      //     mecabTokenLike.readingHiragana);
-      // } else {
-      //   subtokens = tokenize(mecabTokenLike.surfaceLayerForm, { detailed: true });
-      // }
-      subtokens = furiganaFitter.fitFurigana(
-        term,
-        mecabTokenLike.readingHiragana || term);
+      if (mecabTokenLike.readingHiragana
+        && (!mecabTokenLike.lemma
+          || mecabTokenLike.lemma === mecabTokenLike.surfaceLayerForm)) {
+        subtokens = furiganaFitter.fitFurigana(
+          mecabTokenLike.surfaceLayerForm,
+          mecabTokenLike.readingHiragana);
+      } else if (mecabTokenLike.lemma) {
+        subtokens = tokenize(mecabTokenLike.lemma, { detailed: true });
+      } else {
+        subtokens = tokenize(mecabTokenLike.surfaceLayerForm, { detailed: true });
+      }
     }
     const standardizedToken = {
       ...mecabTokenLike,
@@ -92,10 +90,7 @@ const actions = (store) => ({
         value: results,
       },
     };
-  },
-  // setTermResults(state, termResults) {
-  //   return { ...state, termResults, };
-  // }
+  }
 });
 
 /** Just a way to check whether we're looking up the same entry twice */
@@ -388,13 +383,13 @@ const App = connect('languageTools,parses,initialQuery,termResults', actions)(
         const surfaceLayerForm = tokenNode.getAttribute('data-surface-layer-form');
         if (surfaceLayerForm) {
           event.stopPropagation();
-          const mecabToken = {
+          const mecabTokenLike = {
             surfaceLayerForm,
             readingHiragana: tokenNode.getAttribute('data-reading-hiragana'),
             inflectionForm: tokenNode.getAttribute('data-inflection-form'),
             lemma: tokenNode.getAttribute('data-lemma'),
           };
-          chooseTerm(mecabToken);
+          chooseTerm(mecabTokenLike);
         }
       }
     }
