@@ -207,10 +207,10 @@ const Definition = connect('termResults,languageTools', actions)(
     }
     const { furiganaFitter } = languageTools;
 
-    const renderReadingTuple = (classList, headword, readingTuple) => {
+    const renderReading = (classList, headword, readingObj) => {
       const mecabTokenLike = {
         surfaceLayerForm: headword,
-        subtokens: readingTuple.subtokens,
+        subtokens: readingObj.subtokens,
       };
       return html`
       <${Word} classList=${classList} mecabTokenLike=${mecabTokenLike} />
@@ -220,8 +220,8 @@ const Definition = connect('termResults,languageTools', actions)(
     const renderHeadwordReading = (classList, headwordReading) => {
       return html`
       <div class="alt-headword-container">
-        ${headwordReading.readingTuples.map(
-          renderReadingTuple.bind(
+        ${headwordReading.readingObjs.map(
+          renderReading.bind(
             null,
             classList,
             headwordReading.headword))}
@@ -239,8 +239,10 @@ const Definition = connect('termResults,languageTools', actions)(
         // so our headword _is_ the reading (but EDICT avoids duplicating information).
         headwordReadings = result.result.headwords.map((headword) => ({
           headword: headword.form,
-          readingTuples: [{
-            reading: headword.form,
+          readingObjs: [{
+            reading: {
+              form: headword.form,
+            },
             subtokens: furiganaFitter.fitFurigana(
               headword.form,
               headword.form),
@@ -253,34 +255,34 @@ const Definition = connect('termResults,languageTools', actions)(
       }
       if (!bestHeadwordReading) {
         // might happen if we got an entry that's entirely phonetic (as above)
-        const { headword, readingTuples } = headwordReadings[0];
-        if (!readingTuples.length) {
-          // we could check the other readingTuples, but this isn't supposed to be possible anyway.
+        const { headword, readingObjs } = headwordReadings[0];
+        if (!readingObjs.length) {
+          // we could check the other readings, but this isn't supposed to be possible anyway.
           return '';
         }
         bestHeadwordReading = {
           headword,
-          readingTuple: readingTuples[0],
+          readingObj: readingObjs[0],
         };
       }
       // console.log(bestHeadwordReading)
       // console.log(headwordReadings)
-      const remainingTuples = headwordReadings.map((headwordReading) => ({
+      const remainingHeadwordReadings = headwordReadings.map((headwordReading) => ({
         ...headwordReading,
-        readingTuples: headwordReading.readingTuples.filter(({ reading }) => 
+        readingObjs: headwordReading.readingObjs.filter(({ reading }) => 
           headwordReading.headword !== bestHeadwordReading.headword
-          || reading !== bestHeadwordReading.readingTuple.reading),
+          || reading.form !== bestHeadwordReading.readingObj.reading.form),
       }))
-      .filter(({ readingTuples }) => readingTuples.length);
+      .filter(({ readingObjs }) => readingObjs.length);
 
       return html`
       <div class="hero-container">
-        ${renderReadingTuple('hero-definition', bestHeadwordReading.headword, bestHeadwordReading.readingTuple)}
+        ${renderReading('hero-definition', bestHeadwordReading.headword, bestHeadwordReading.readingObj)}
         <div>${result.result.meaning}<//>
         <div>${result.result.line}<//>
       <//>
       <div class="alt-container">
-        ${remainingTuples.map(renderHeadwordReading.bind(null, 'alt-definition'))}
+        ${remainingHeadwordReadings.map(renderHeadwordReading.bind(null, 'alt-definition'))}
       <//>
       `;
     };

@@ -28,13 +28,13 @@ export class HeadwordReadingResolver {
           if (!reading.tags.misc.length) {
             return acc2.concat({
               headword: headwordForm,
-              reading: reading.form,
+              reading,
             });
           }
           if (reading.tags.misc.includes(headwordForm)) {
             return acc2.concat({
               headword: headwordForm,
-              reading: reading.form,
+              reading,
             });
           }
           return acc2;
@@ -47,7 +47,7 @@ export class HeadwordReadingResolver {
       reading,
       subtokens: this._furiganaFitter.fitFurigana(
         headword,
-        reading,
+        reading.form,
         ),
     }));
   }
@@ -77,8 +77,8 @@ export class HeadwordReadingSorter {
       .sort((leftHeadword, rightHeadword) => leftHeadword.localeCompare(rightHeadword, 'ja-JP'))
       .map(headword => ({
         headword,
-        readingTuples: grouped[headword]
-          .sort((left, right) => left.reading.localeCompare(right.reading, 'ja-JP')),
+        readingObjs: grouped[headword]
+          .sort((left, right) => left.reading.form.localeCompare(right.reading.form, 'ja-JP')),
       }));
   }
 }

@@ -22,8 +22,9 @@ export class HeadwordReadingRanker {
     this._searchTermRecommender = searchTermRecommender;
   }
 
-  _classifyRelevanceHeadwordReading(headword, readingTuple) {
-    const { reading } = readingTuple;
+  _classifyRelevanceHeadwordReading(headword, readingObj) {
+    const { reading } = readingObj;
+    const { form, tags } = reading;
     const { readingHiragana } = this._mecabToken;
     const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
     let relevance = 0;
@@ -33,38 +34,42 @@ export class HeadwordReadingRanker {
     if (headword === readingHiragana) {
       relevance++;
     }
-    if (reading === readingHiragana) {
+    if (form === readingHiragana) {
       relevance++;
     }
-    console.log(readingTuple)
+    if (tags.priorityEntry) {
+      relevance++;
+    }
     // console.log(
     //   term,
     //   readingHiragana,
     //   headword,
+    //   form,
+    //   tags,
     //   reading,
     //   relevance,
     //   )
     return relevance;
   }
 
-  getMostRelevantHeadwordReading(headwordReadingsTuples) {
+  getMostRelevantHeadwordReading(headwordReadings) {
     const term = this._searchTermRecommender.getRecommendedSearchTerm(this._mecabToken);
-    const result = headwordReadingsTuples
-    .reduce((headwordTupleAcc, { headword, readingTuples }) => {
-      const proposed = readingTuples.reduce((readingTupleAcc, readingTuple) => {
+    const result = headwordReadings
+    .reduce((headwordReadingAcc, { headword, readingObjs }) => {
+      const proposed = readingObjs.reduce((readingAcc, readingObj) => {
         const relevance = this._classifyRelevanceHeadwordReading(
           headword,
-          readingTuple);
-        if (relevance > readingTupleAcc.relevance) {
+          readingObj);
+        if (relevance > readingAcc.relevance) {
           return {
             relevance,
             proposed: {
               headword,
-              readingTuple,
+              readingObj,
             },
           }
         }
-        return readingTupleAcc;
+        return readingAcc;
       }, {
         relevance: -1,
         proposed: undefined,
@@ -73,15 +78,15 @@ export class HeadwordReadingRanker {
       if (proposed) {
         const relevance = this._classifyRelevanceHeadwordReading(
           headword,
-          proposed.readingTuple);
-        if (relevance > headwordTupleAcc.relevance) {
+          proposed.readingObj);
+        if (relevance > headwordReadingAcc.relevance) {
           return {
             relevance,
             proposed,
           }
         }
       }
-      return headwordTupleAcc;
+      return headwordReadingAcc;
     }, {
       relevance: -1,
       proposed: undefined,
