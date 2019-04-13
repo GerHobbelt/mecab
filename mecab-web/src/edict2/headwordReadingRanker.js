@@ -36,12 +36,13 @@ export class HeadwordReadingRanker {
     if (reading === readingHiragana) {
       relevance++;
     }
-    // console.log(
-    //   term,
-    //   headword,
-    //   reading,
-    //   relevance,
-    //   )
+    console.log(
+      term,
+      readingHiragana,
+      headword,
+      reading,
+      relevance,
+      )
     return relevance;
   }
 
@@ -50,17 +51,16 @@ export class HeadwordReadingRanker {
     const result = headwordReadingsTuples
     .reduce((headwordTupleAcc, { headword, readingTuples }) => {
       const proposed = readingTuples.reduce((readingTupleAcc, readingTuple) => {
-        const proposed = {
-          headword,
-          readingTuple,
-        };
         const relevance = this._classifyRelevanceHeadwordReading(
           headword,
-          proposed);
+          readingTuple);
         if (relevance > readingTupleAcc.relevance) {
           return {
             relevance,
-            proposed,
+            proposed: {
+              headword,
+              readingTuple,
+            },
           }
         }
         return readingTupleAcc;

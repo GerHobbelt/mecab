@@ -152,5 +152,5 @@ enamdict.utf8.txt \
 kanjidic2-lf.utf8.txt \
 dist/
 
-tar -zcvf dist.tar.gz dist/ 
+tar -zcvf dist.tar.gz dist/
 ```

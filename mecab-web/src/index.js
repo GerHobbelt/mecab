@@ -57,6 +57,10 @@ const actions = (store) => ({
       mecabPipeline,
       furiganaFitter,
     } = state.languageTools;
+
+    const term = new SearchTermRecommender()
+    .getRecommendedSearchTerm(mecabTokenLike);
+
     let subtokens = mecabTokenLike.subtokens;
     if (!mecabTokenLike.subtokens) {
       // if (mecabTokenLike.readingHiragana) {
@@ -67,8 +71,8 @@ const actions = (store) => ({
       //   subtokens = tokenize(mecabTokenLike.surfaceLayerForm, { detailed: true });
       // }
       subtokens = furiganaFitter.fitFurigana(
-        mecabTokenLike.surfaceLayerForm,
-        mecabTokenLike.readingHiragana || mecabTokenLike.surfaceLayerForm);
+        term,
+        mecabTokenLike.readingHiragana || term);
     }
     const standardizedToken = {
       ...mecabTokenLike,
