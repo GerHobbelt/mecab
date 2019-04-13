@@ -36,6 +36,7 @@ export class HeadwordReadingRanker {
     if (reading === readingHiragana) {
       relevance++;
     }
+    console.log(readingTuple)
     // console.log(
     //   term,
     //   readingHiragana,
@@ -72,7 +73,7 @@ export class HeadwordReadingRanker {
       if (proposed) {
         const relevance = this._classifyRelevanceHeadwordReading(
           headword,
-          proposed);
+          proposed.readingTuple);
         if (relevance > headwordTupleAcc.relevance) {
           return {
             relevance,

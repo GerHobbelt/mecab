@@ -13,6 +13,13 @@ export class ParsedEntriesSorter {
     // if (relevance.queryMatchesPriorityReading) {
     //   merits++;
     // }
+
+    // no higher-pri reading exists
+    if (relevance.queryMatchesReading
+      && !relevance.queryMatchesPriorityReading
+      && !relevance.priorityReadingExists) {
+      merits++;
+    }
     // relevance.merits = merits;
     return merits;
   }
@@ -49,9 +56,12 @@ export class ParsedEntryRelevanceClassifier {
         queryMatchesReading: parsedEntry.readings.reduce((acc, curr) => {
           return acc || curr.form === readingHiragana;
         }, false),
-        // queryMatchesPriorityReading: parsedEntry.readings.reduce((acc, curr) => {
-        //   return acc || (curr.tags.priorityEntry && curr.form === readingHiragana);
-        // }, false),
+        queryMatchesPriorityReading: parsedEntry.readings.reduce((acc, curr) => {
+          return acc || (curr.tags.priorityEntry && curr.form === readingHiragana);
+        }, false),
+        priorityReadingExists: parsedEntry.readings.reduce((acc, curr) => {
+          return acc || curr.tags.priorityEntry;
+        }, false),
       },
       result: parsedEntry,
     };
