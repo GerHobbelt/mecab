@@ -29,7 +29,8 @@ import {
   MecabOutputParser,
   SearchTermRecommender,
   MecabTokenAgglutinator,
-  MecabTokenEnricher,
+  HiraganaReadingAdder,
+  VeWordFuriganaFitter,
   MecabWhitespaceInterposer,
   MecabPipeline,
 } from './mecab/index.js';
@@ -85,8 +86,10 @@ export class MecabPipelineFactory {
     return new MecabPipeline({
       mecab,
       mecabOutputParser,
-      tokenEnricher: new MecabTokenEnricher({
+      hiraganaReadingAdder: new HiraganaReadingAdder({
         wanakana: { toHiragana, },
+      }),
+      veWordFuriganaFitter: new VeWordFuriganaFitter({
         furiganaFitter,
       }),
       tokenAgglutinator: new MecabTokenAgglutinator(),

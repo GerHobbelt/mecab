@@ -1,3 +1,5 @@
+import { Pos, Grammar, Const } from './veConst.js';
+
 /**
   * This file contains code ported from Kim Ahlström's Ve (MIT License).
   * https://github.com/Kimtaro/ve
@@ -26,145 +28,42 @@
   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   * THE SOFTWARE.
   */
-const Pos = {
-  Noun: 'Noun',
-  ProperNoun: 'ProperNoun',
-  Pronoun: 'Pronoun',
-  Adjective: 'Adjective',
-  Adverb: 'Adverb',
-  Determiner: 'Determiner',
-  Preposition: 'Preposition',
-  Postposition: 'Postposition',
-  Verb: 'Verb',
-  Suffix: 'Suffix',
-  Prefix: 'Prefix',
-  Conjunction: 'Conjunction',
-  Interjection: 'Interjection',
-  Number: 'Number',
-  Unknown: 'Unknown',
-  Symbol: 'Symbol',
-  Other: 'Other',
-  TBD: 'TBD',
-};
-
-const Grammar = {
-  Auxiliary: 'Auxiliary',
-  Nominal: 'Nominal',
-  Unassigned: 'Unassigned',
-};
-
-const Const = {
-  // POS1
-  MEISHI: '名詞',
-  KOYUUMEISHI: '固有名詞',
-  DAIMEISHI: '代名詞',
-  JODOUSHI: '助動詞',
-  KAZU: '数',
-  JOSHI: '助詞',
-  SETTOUSHI: '接頭詞',
-  DOUSHI: '動詞',
-  KIGOU: '記号',
-  FIRAA: 'フィラー',
-  SONOTA: 'その他',
-  KANDOUSHI: '感動詞',
-  RENTAISHI: '連体詞',
-  SETSUZOKUSHI: '接続詞',
-  FUKUSHI: '副詞',
-  SETSUZOKUJOSHI: '接続助詞',
-  KEIYOUSHI: '形容詞',
-  MICHIGO: '未知語',
-
-  // POS2_BLACKLIST and inflection types
-  HIJIRITSU: '非自立',
-  FUKUSHIKANOU: '副詞可能',
-  SAHENSETSUZOKU: 'サ変接続',
-  KEIYOUDOUSHIGOKAN: '形容動詞語幹',
-  NAIKEIYOUSHIGOKAN: 'ナイ形容詞語幹',
-  JODOUSHIGOKAN: '助動詞語幹',
-  FUKUSHIKA: '副詞化',
-  TAIGENSETSUZOKU: '体言接続',
-  RENTAIKA: '連体化',
-  TOKUSHU: '特殊',
-  SETSUBI: '接尾',
-  SETSUZOKUSHITEKI: '接続詞的',
-  DOUSHIHIJIRITSUTEKI: '動詞非自立的',
-  SAHEN_SURU: 'サ変・スル',
-  TOKUSHU_TA: '特殊・タ',
-  TOKUSHU_NAI: '特殊・ナイ',
-  TOKUSHU_TAI: '特殊・タイ',
-  TOKUSHU_DESU: '特殊・デス',
-  TOKUSHU_DA: '特殊・ダ',
-  TOKUSHU_MASU: '特殊・マス',
-  TOKUSHU_NU: '特殊・ヌ',
-  FUHENKAGATA: '不変化型',
-  JINMEI: '人名',
-  MEIREI_I: '命令ｉ',
-  KAKARIJOSHI: '係助詞',
-  KAKUJOSHI: '格助詞',
-
-  NO_DATA: '*',
-
-  // etc
-  NA: 'な',
-  NI: 'に',
-  TE: 'て',
-  DE: 'で',
-  BA: 'ば',
-  NN: 'ん',
-  SA: 'さ',
-};
-
-// const mecab
-/*
-POS1 = 0;  // partOfSpeech
-POS2 = 1;  // partOfSpeechSubclass1
-POS3 = 2;  // partOfSpeechSubclass2
-POS4 = 3;  // partOfSpeechSubclass3
-CTYPE = 4; // inflectionType
-CFORM = 5; // inflectionForm
-BASIC = 6; // lemma
-READING = 7; // reading
-PRONUNCIATION = 8; // pronunciation
-
-Token#getAllFeaturesArray()[POS1]
-mecabToken.partOfSpeech
-*/
 
 export class Word {
   constructor({
-    read,
+    reading,
     pronunciation,
     grammar,
-    basic,
-    part_of_speech,
-    nodeStr,
+    lemma,
+    partOfSpeechVe,
+    surfaceLayerForm,
     token,
   }) {
-    this._reading = read;
-    this._transcription = pronunciation;
+    this._reading = reading;
+    this._pronunciation = pronunciation;
     this._grammar = grammar;
-    this._lemma = basic; // "聞く"
-    this._part_of_speech = part_of_speech; // eg. Pos.Noun
-    this._word = nodeStr; // "聞かせられ"
+    this._lemma = lemma; // "聞く"
+    this._partOfSpeechVe = partOfSpeechVe; // eg. Pos.Noun
+    this._surfaceLayerForm = surfaceLayerForm; // "聞かせられ"
     this._token = token;
-    
+
     this._tokens = [token];
   }
 
-  set part_of_speech(value) {
-    this._part_of_speech = value;
+  set partOfSpeechVe(value) {
+    this._partOfSpeechVe = value;
   }
 
-  get part_of_speech() {
-    return this._part_of_speech;
+  get partOfSpeechVe() {
+    return this._partOfSpeechVe;
   }
 
   get tokens() {
     return this._tokens;
   }
 
-  get word() {
-    return this._word;
+  get surfaceLayerForm() {
+    return this._surfaceLayerForm;
   }
 
   get lemma() {
@@ -172,18 +71,18 @@ export class Word {
   }
 
   toString() {
-    return this._word;
+    return this._surfaceLayerForm;
   }
 
   addToken(token) {
     this._tokens.push(token);
   }
 
-  appendToWord(suffix) {
-    if (this._word === undefined) {
-      this._word = "_"; // likely won't experience a null word, actually.
+  appendToSurfaceLayerForm(suffix) {
+    if (this._surfaceLayerForm === undefined) {
+      this._surfaceLayerForm = "_"; // likely won't experience a null word, actually.
     }
-    this._word += suffix;
+    this._surfaceLayerForm += suffix;
   }
 
   appendToReading(suffix) {
@@ -193,11 +92,11 @@ export class Word {
     this._reading += suffix;
   }
 
-  appendToTranscription(suffix) {
-    if (this._transcription === undefined) {
-      this._transcription = "_";
+  appendToPronunciation(suffix) {
+    if (this._pronunciation === undefined) {
+      this._pronunciation = "_";
     }
-    this._transcription += suffix;
+    this._pronunciation += suffix;
   }
 
   appendToLemma(suffix) {
@@ -211,11 +110,11 @@ export class Word {
 export class MecabTokenAgglutinator {
 	agglutinate(mecabTokens) {
     return mecabTokens.reduce((acc, current, i, tokenArray) => {
-      let eat_next = false,
-      eat_lemma = true,
-      attach_to_previous = false,
-      also_attach_to_lemma = false,
-      update_pos = false,
+      let eatNext = false,
+      eatLemma = true,
+      attachToPrevious = false,
+      alsoAttachToLemma = false,
+      updatePos = false,
       grammar = Grammar.Unassigned,
       pos = undefined; // or TBD
 
@@ -245,25 +144,25 @@ export class MecabTokenAgglutinator {
                 switch(following.utilizationType){
                   case Const.SAHEN_SURU:
                     pos = Pos.Verb;
-                    eat_next = true;
+                    eatNext = true;
                     break;
                   case Const.TOKUSHU_DA:
                     pos = Pos.Adjective;
                     // Using inflectionForm as in Ruby script, whereas Java used partOfSpeechSubclass1
                     // https://github.com/Kimtaro/ve/blob/master/lib/providers/mecab_ipadic.rb#L207
                     if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
-                      eat_next = true;
-                      eat_lemma = false;
+                      eatNext = true;
+                      eatLemma = false;
                     }
                     break;
                   case Const.TOKUSHU_NAI:
                     pos = Pos.Adjective;
-                    eat_next = true;
+                    eatNext = true;
                     break;
                   default:
                     if (following.partOfSpeech === Const.JOSHI
                       && following.surfaceLayerForm === Const.NI) {
-                      pos = Pos.Adverb; // Ve script redundantly (I think) also has eat_next = false here.  
+                      pos = Pos.Adverb; // Ve script redundantly (I think) also has eatNext = false here.  
                     }
                     break;
                 }
@@ -282,7 +181,7 @@ export class MecabTokenAgglutinator {
                     if (following.partOfSpeech === Const.JOSHI
                       && following.surfaceLayerForm === Const.NI){
                       pos = Pos.Adverb;
-                      eat_next = false; // Changed this to false because 'case JOSHI' has 'attach_to_previous = true'.
+                      eatNext = false; // Changed this to false because 'case JOSHI' has 'attachToPrevious = true'.
                     }
                     break;
                   case Const.JODOUSHIGOKAN:
@@ -290,12 +189,12 @@ export class MecabTokenAgglutinator {
                       pos = Pos.Verb;
                       grammar = Grammar.Auxiliary;
                       if (following.inflectionForm === Const.TAIGENSETSUZOKU) {
-                        eat_next = true;
+                        eatNext = true;
                       }
                     } else if (following.partOfSpeech === 'JOSHI'
                       && following.partOfSpeechSubclass2 === Const.FUKUSHIKA){
                       pos = Pos.Adverb;
-                      eat_next = true;
+                      eatNext = true;
                     }
                     break;
                   case Const.KEIYOUDOUSHIGOKAN:
@@ -304,7 +203,7 @@ export class MecabTokenAgglutinator {
                     if ((following.inflectionType === Const.TOKUSHU_DA
                       && following.inflectionForm === Const.TAIGENSETSUZOKU)
                       || following.partOfSpeechSubclass1 === Const.RENTAIKA) {
-                      eat_next = true;
+                      eatNext = true;
                     }
                     break;
                   default:
@@ -317,9 +216,9 @@ export class MecabTokenAgglutinator {
               // Refers to line 261.
               pos = Pos.Number;
               if (acc.wordList.length
-                && acc.wordList[acc.wordList.length-1].part_of_speech === Pos.Number){
-                attach_to_previous = true;
-                also_attach_to_lemma = true;
+                && acc.wordList[acc.wordList.length-1].partOfSpeechVe === Pos.Number){
+                attachToPrevious = true;
+                alsoAttachToLemma = true;
               }
               break;
             case Const.SETSUBI:
@@ -329,12 +228,12 @@ export class MecabTokenAgglutinator {
               } else {
                 if (current.partOfSpeechSubclass2 === Const.TOKUSHU
                   && current.lemma === Const.SA){
-                  update_pos = true;
+                  updatePos = true;
                   pos = Pos.Noun;
                 } else {
-                  also_attach_to_lemma = true;
+                  alsoAttachToLemma = true;
                 }
-                attach_to_previous = true;
+                attachToPrevious = true;
               }
               break;
             case Const.SETSUZOKUSHITEKI:
@@ -366,10 +265,10 @@ export class MecabTokenAgglutinator {
           if (acc.previous === undefined
             || acc.previous.partOfSpeechSubclass1 !== Const.KAKARIJOSHI
             && qualifyingList1.includes(current.inflectionType)) {
-            attach_to_previous = true;
+            attachToPrevious = true;
           } else if (current.inflectionType === Const.FUHENKAGATA
             && current.lemma === Const.NN) {
-            attach_to_previous = true;
+            attachToPrevious = true;
           } else if (
             // TODO: Java version overlooks logical operator precedence; using Ruby version
             [
@@ -385,11 +284,11 @@ export class MecabTokenAgglutinator {
           pos = Pos.Verb;
           switch (current.partOfSpeechSubclass1){
             case Const.SETSUBI:
-              attach_to_previous = true;
+              attachToPrevious = true;
               break;
             case Const.HIJIRITSU:
               if (current.inflectionForm !== Const.MEIREI_I) {
-                attach_to_previous = true;
+                attachToPrevious = true;
               }
             default:
               break;
@@ -411,7 +310,7 @@ export class MecabTokenAgglutinator {
             && qualifyingList2.includes(current.surfaceLayerForm)
             // || current.surfaceLayerForm === Const.NI
             ) {
-              attach_to_previous = true;
+              attachToPrevious = true;
             }
           break;
         case Const.RENTAISHI:
@@ -445,39 +344,39 @@ export class MecabTokenAgglutinator {
         return token[feature];
       };
 
-      if (attach_to_previous && acc.wordList.length){
+      if (attachToPrevious && acc.wordList.length){
         const finalWord = acc.wordList[acc.wordList.length-1];
         // these sometimes try to add to null readings.
         finalWord.addToken(current);
-        finalWord.appendToWord(current.surfaceLayerForm);
+        finalWord.appendToSurfaceLayerForm(current.surfaceLayerForm);
         finalWord.appendToReading(getFeatureSafely(current, 'reading'));
-        finalWord.appendToTranscription(getFeatureSafely(current, 'pronunciation'));
-        if (also_attach_to_lemma) {
+        finalWord.appendToPronunciation(getFeatureSafely(current, 'pronunciation'));
+        if (alsoAttachToLemma) {
           finalWord.appendToLemma(current.lemma);
         }
-        if (update_pos) {
-          finalWord.part_of_speech = pos;
+        if (updatePos) {
+          finalWord.partOfSpeechVe = pos;
         }
       } else {
         const word = new Word({
-          read: current.reading,
+          reading: current.reading,
           pronunciation: current.pronunciation,
           grammar,
-          basic: current.lemma,
-          part_of_speech: pos,
-          nodeStr: current.surfaceLayerForm,
+          lemma: current.lemma,
+          partOfSpeechVe: pos,
+          surfaceLayerForm: current.surfaceLayerForm,
           token: current,
         });
-        if (eat_next){
+        if (eatNext){
           if (i === tokenArray.length-1) {
             throw new Error("There's a path that allows array overshooting.");
           }
           const following = tokenArray[i+1];
           word.addToken(following);
-          word.appendToWord(following.surfaceLayerForm);
+          word.appendToSurfaceLayerForm(following.surfaceLayerForm);
           word.appendToReading(following.reading);
-          word.appendToTranscription(getFeatureSafely(following, 'pronunciation'));
-          if (eat_lemma) {
+          word.appendToPronunciation(getFeatureSafely(following, 'pronunciation'));
+          if (eatLemma) {
             word.appendToLemma(following.lemma);
           }
         }
@@ -494,9 +393,6 @@ export class MecabTokenAgglutinator {
       }
     }, {
       previous: undefined,
-      // following: undefined,
-      // final: tokens[tokens.length-1],
-      // tokens: [],
       wordList: [],
     }).wordList;
 	}
