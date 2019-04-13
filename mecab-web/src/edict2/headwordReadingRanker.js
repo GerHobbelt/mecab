@@ -36,6 +36,12 @@ export class HeadwordReadingRanker {
     if (reading === readingHiragana) {
       relevance++;
     }
+    console.log(
+      term,
+      headword,
+      reading,
+      relevance,
+      )
     return relevance;
   }
 
@@ -49,7 +55,7 @@ export class HeadwordReadingRanker {
           readingTuple,
         };
         const relevance = this._classifyRelevanceHeadwordReading(
-          this._mecabToken,
+          headword,
           proposed);
         if (relevance > readingTupleAcc.relevance) {
           return {
@@ -65,7 +71,7 @@ export class HeadwordReadingRanker {
       // always expected to be true, since we shouldn't produce empty array of reading tuples
       if (proposed) {
         const relevance = this._classifyRelevanceHeadwordReading(
-          this._mecabToken,
+          headword,
           proposed);
         if (relevance > headwordTupleAcc.relevance) {
           return {
