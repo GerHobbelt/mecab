@@ -241,7 +241,7 @@ function htmlConcat(html, left, right) {
 const boundHtmlConcat = htmlConcat.bind(null, html);
 
 const Definition = connect('termResults,languageTools', actions)(
-  ({ termResults,languageTools }) => {
+  ({ termResults,languageTools,chooseTerm }) => {
     if (!languageTools) {
       return '';
     }
@@ -326,6 +326,17 @@ const Definition = connect('termResults,languageTools', actions)(
       <//>
       `;
     };
+
+    const onClickLookup = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const surfaceLayerForm = event.target.form['surface-layer-form'].value;
+      console.log(surfaceLayerForm);
+      const mecabTokenLike = {
+        surfaceLayerForm,
+      };
+      chooseTerm(mecabTokenLike);
+    }
     // { headwords, meaning, readings}
     // const renderEnamdictResult = (result) => {
     //   return html`
@@ -353,13 +364,19 @@ const Definition = connect('termResults,languageTools', actions)(
             `}')
             <//>`}
       <//>
+      <div class="alt-lookup">
+        <form name="term-lookup">
+          <input name="surface-layer-form" type="text" value=${termResults.key.surfaceLayerForm}><//>
+          <button onClick=${onClickLookup}>Lookup<//>
+        <//>
+      <//>
       <div class="jisho-lookup">
       Look up <a href=${
       `https://jisho.org/search/${encodeURIComponent(termResults.key.surfaceLayerForm)}`
-      } target="_blank">${termResults.key.surfaceLayerForm}<//> or ${
+      } target="_blank">${termResults.key.surfaceLayerForm}<//>${
         termResults.key.lemma
           && termResults.key.lemma !== termResults.key.surfaceLayerForm
-          && html`<a href=${
+          && html` or <a href=${
         `https://jisho.org/search/${encodeURIComponent(term)}`
         } target="_blank">${term}<//>`} on Jisho.org
       <//>

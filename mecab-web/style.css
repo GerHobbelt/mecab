@@ -235,10 +235,19 @@ nav a, nav a:visited, nav a:hover, nav a:active {
   display: block;
 }
 
+.alt-lookup {
+  font-size: 0.8em;
+  display: block;
+}
+
 .jisho-lookup {
   font-size: 0.8em;
   display: block;
   margin-bottom: 1em;
+}
+
+form[name="term-lookup"] input {
+  display: initial;
 }
 
 .names-section {
