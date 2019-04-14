@@ -88,7 +88,11 @@ export class Edict2LikeParser {
 
   parseEdictLine(line) {
     // console.log(line);
-    const [indexSection, meaningSection] = line.split('/', 2);
+    const firstSlash = line.indexOf('/')
+    const indexSection = line.slice(0, firstSlash);
+    const meaningSection = line.slice(firstSlash+1);
+    console.log(indexSection)
+    console.log(meaningSection)
     const [headwordSection, readingSection] = indexSection.split(' ', 2);
     
     const headwords = this._parseEntrySection(headwordSection);
