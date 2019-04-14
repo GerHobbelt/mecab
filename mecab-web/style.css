@@ -298,6 +298,9 @@ form[name="term-lookup"] input {
 .meaning-aspect-container.usage-domain {
   color: #A65549;
 }
+.meaning-aspect-container.misc {
+  color: #4C43B5;
+}
 .meaning-aspect {
   font-size: small;
   margin-left: 0.5em;

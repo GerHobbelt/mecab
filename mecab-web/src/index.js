@@ -325,6 +325,17 @@ const Definition = connect('termResults,languageTools', actions)(
           <div class="meaning-prose">
           ${meaning.prose}
           <//>
+          ${meaning.tags.misc
+          && meaning.tags.misc.length
+          && html`
+            <div class="meaning-aspect-container misc">
+              ${meaning.tags.misc.map(misc => html`
+                <div class="meaning-aspect">
+                ${misc}
+                <//>
+                `)}
+            <//>
+            ` || ''}
           ${meaning.tags.sense
           && meaning.tags.sense.length
           && html`
@@ -366,8 +377,6 @@ const Definition = connect('termResults,languageTools', actions)(
         <//>
         `
       };
-
-      console.log(result.result)
 
       // <div>${result.result.line}<//>
 
@@ -411,17 +420,24 @@ const Definition = connect('termResults,languageTools', actions)(
 
     // <h3>EDICT2<//>
 
+    const renderSurfaceLayerForm = () => html`
+    <${Word} classList="" mecabTokenLike=${termResults.key} preferLemmaSubtokens=${false} />
+    `;
+
     return html`
     <div>
       <div class="results-header">
-      Dictionary results for 
-        '<${Word} classList="" mecabTokenLike=${termResults.key} preferLemmaSubtokens=${false} />'
+      Dictionary results for<span> <//>
         ${termResults.key.lemma
           && termResults.key.lemma !== termResults.key.surfaceLayerForm
-          && html`<span> (using dictionary form: '${html`
-            <${Word} classList="" mecabTokenLike=${termResults.key} preferLemmaSubtokens=${true} />
-            `}')
-            <//>`}
+          ? html`
+            '<${Word} classList="" mecabTokenLike=${termResults.key} preferLemmaSubtokens=${true} />'
+             (lemma of '${renderSurfaceLayerForm()}')
+            `
+          : html`
+          '${renderSurfaceLayerForm()}'
+          `
+        }
       <//>
       <div class="alt-lookup">
         <form name="term-lookup">

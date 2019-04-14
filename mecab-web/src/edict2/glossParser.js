@@ -70,6 +70,7 @@ export class Edict2GlossParser {
   			tagContent.split(',').forEach(tag => {
   				if (!isNaN(tag)) {
 	  				meaningIx = +tag;
+	  				return;
 	  			}
 	  			const dialectMatch = /^([^:]*):$/.exec(tag);
 	  			if (dialectMatch) {
