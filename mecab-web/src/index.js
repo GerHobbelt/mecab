@@ -21,7 +21,7 @@ function initStore() {
       enamdict: false,
       kanjidic2: false,
     },
-    initialQuery: `太郎はこの本を二郎を見た女性に渡した。
+    initialQuery: `太郎はこの本を笑也を見た女性に渡した。
 すもももももももものうち。`,
     parses: [],
     // chosenTerm: undefined,
@@ -509,6 +509,10 @@ const App = connect('languageTools,parses,initialQuery,termResults', actions)(
     const [query, setQuery] = useState(initialQuery);
 
     function onSubmit(event) {
+      if (!languageTools) {
+        return;
+      }
+      const { mecabPipeline } = languageTools;
       event.preventDefault();
       const nodes = mecabPipeline.tokenize(query);
       addParse(nodes);
