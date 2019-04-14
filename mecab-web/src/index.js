@@ -61,34 +61,51 @@ const actions = (store) => ({
     // readingHiragana always refers to surfaceLayerForm
     // subtokens always refers to the searched term (preferably lemma, otherwise surfaceLayerForm)
 
+    let surfaceLayerForm = mecabTokenLike.surfaceLayerForm;
+    if (!surfaceLayerForm) {
+      surfaceLayerForm = mecabTokenLike.lemma;
+    }
+
     let subtokens = mecabTokenLike.subtokens;
     if (!subtokens) {
       if (mecabTokenLike.readingHiragana
         && (!mecabTokenLike.lemma
-          || mecabTokenLike.lemma === mecabTokenLike.surfaceLayerForm)) {
+          || mecabTokenLike.lemma === surfaceLayerForm)) {
         subtokens = furiganaFitter.fitFurigana(
-          mecabTokenLike.surfaceLayerForm,
+          surfaceLayerForm,
           mecabTokenLike.readingHiragana);
       } else if (mecabTokenLike.lemma) {
         subtokens = tokenize(mecabTokenLike.lemma, { detailed: true });
       } else {
-        subtokens = tokenize(mecabTokenLike.surfaceLayerForm, { detailed: true });
+        subtokens = tokenize(surfaceLayerForm, { detailed: true });
       }
     }
 
     let surfaceLayerFormSubtokens = mecabTokenLike.surfaceLayerFormSubtokens;
     if (!surfaceLayerFormSubtokens) {
       if (!mecabTokenLike.lemma
-          || mecabTokenLike.lemma === mecabTokenLike.surfaceLayerForm) {
+          || mecabTokenLike.lemma === surfaceLayerForm) {
         surfaceLayerFormSubtokens = subtokens;
       } else {
-        surfaceLayerFormSubtokens = tokenize(mecabTokenLike.surfaceLayerForm, { detailed: true });
+        surfaceLayerFormSubtokens = tokenize(surfaceLayerForm, { detailed: true });
+      }
+    }
+
+    let lemmaSubtokens = mecabTokenLike.lemmaSubtokens;
+    if (!lemmaSubtokens) {
+      if (!mecabTokenLike.lemma
+          || mecabTokenLike.lemma === surfaceLayerForm) {
+        lemmaSubtokens = surfaceLayerFormSubtokens;
+      } else {
+        lemmaSubtokens = tokenize(mecabTokenLike.lemma, { detailed: true });
       }
     }
 
     const standardizedToken = {
       ...mecabTokenLike,
+      surfaceLayerForm,
       subtokens,
+      lemmaSubtokens,
       surfaceLayerFormSubtokens,
     }
     if (getTermKey(standardizedToken) === getTermKey(state.termResults.key || {})) {
@@ -144,18 +161,19 @@ const Rubied = ({ theValue, reading }) => {
   `
   };
 
-const Word = ({ classList, mecabTokenLike, preferSurfaceLayerFormSubtokens }) => {
+const Word = ({ classList, mecabTokenLike, preferLemmaSubtokens }) => {
   const {
     surfaceLayerForm,
     subtokens,
+    lemmaSubtokens,
     surfaceLayerFormSubtokens,
     readingHiragana,
     inflectionForm,
     lemma,
     } = mecabTokenLike;
 
-  const preferredSubtokens = preferSurfaceLayerFormSubtokens
-  ? surfaceLayerFormSubtokens
+  const preferredSubtokens = preferLemmaSubtokens
+  ? lemmaSubtokens
   : subtokens;
 
   const reducedSubtokens = preferredSubtokens.reduce(({
@@ -198,6 +216,7 @@ const Word = ({ classList, mecabTokenLike, preferSurfaceLayerFormSubtokens }) =>
   data-reading-hiragana=${readingHiragana}
   data-inflection-form=${inflectionForm}
   data-lemma=${lemma}
+  data-subtokens=${JSON.stringify(subtokens)}
   >${output}<//>
   `
   };
@@ -234,7 +253,7 @@ const Definition = connect('termResults,languageTools', actions)(
         subtokens: readingObj.subtokens,
       };
       return html`
-      <${Word} classList=${classList} mecabTokenLike=${mecabTokenLike} preferSurfaceLayerFormSubtokens=${false} />
+      <${Word} classList=${classList} mecabTokenLike=${mecabTokenLike} preferLemmaSubtokens=${false} />
       `;
     };
 
@@ -318,7 +337,7 @@ const Definition = connect('termResults,languageTools', actions)(
     const term = new SearchTermRecommender()
     .getRecommendedSearchTerm(termResults.key);
 
-    console.log(termResults.key)
+    // console.log(termResults.key)
 
     // <h3>EDICT2<//>
 
@@ -326,18 +345,23 @@ const Definition = connect('termResults,languageTools', actions)(
     <div>
       <div class="results-header">
       Dictionary results for 
-        '<${Word} classList="" mecabTokenLike=${termResults.key} preferSurfaceLayerFormSubtokens=${true} />'
+        '<${Word} classList="" mecabTokenLike=${termResults.key} preferLemmaSubtokens=${false} />'
         ${termResults.key.lemma
           && termResults.key.lemma !== termResults.key.surfaceLayerForm
           && html`<span> (using dictionary form: '${html`
-            <${Word} classList="" mecabTokenLike=${termResults.key} preferSurfaceLayerFormSubtokens=${false} />
+            <${Word} classList="" mecabTokenLike=${termResults.key} preferLemmaSubtokens=${true} />
             `}')
             <//>`}
       <//>
       <div class="jisho-lookup">
       Look up <a href=${
-      `https://jisho.org/search/${encodeURIComponent(term)}`
-      } target="_blank">${term}<//> on Jisho.org
+      `https://jisho.org/search/${encodeURIComponent(termResults.key.surfaceLayerForm)}`
+      } target="_blank">${termResults.key.surfaceLayerForm}<//> or ${
+        termResults.key.lemma
+          && termResults.key.lemma !== termResults.key.surfaceLayerForm
+          && html`<a href=${
+        `https://jisho.org/search/${encodeURIComponent(term)}`
+        } target="_blank">${term}<//>`} on Jisho.org
       <//>
       ${termResults.value.edict2.map(renderEdictResult)}
       <div class="names-section">Names<//>
@@ -417,6 +441,7 @@ const App = connect('languageTools,parses,initialQuery,termResults', actions)(
             readingHiragana: tokenNode.getAttribute('data-reading-hiragana'),
             inflectionForm: tokenNode.getAttribute('data-inflection-form'),
             lemma: tokenNode.getAttribute('data-lemma'),
+            subtokens: JSON.parse(tokenNode.getAttribute('data-subtokens')),
           };
           chooseTerm(mecabTokenLike);
         }
