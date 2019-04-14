@@ -166,7 +166,7 @@ a.token2:hover, .token3:hover, .token4:hover {
 
 .hero-container {
   display: block;
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
 }
 
 .hero-definition {
@@ -176,7 +176,14 @@ a.token2:hover, .token3:hover, .token4:hover {
 .alt-container {
   display: flex;
   flex-direction: column;
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
+  margin-left: 1em;
+}
+
+.alt-head {
+  margin-bottom: 0.5em;
+  /*color: #7892FF;*/
+  font-style: italic;
 }
 
 .alt-headword-container {
@@ -190,6 +197,9 @@ a.token2:hover, .token3:hover, .token4:hover {
 .alt-definition {
   margin-right: 1.5em;
 }
+/*.alt-container:empty {
+  margin-right: initial;
+}*/
 
 .submitter {
   color: white;
@@ -255,4 +265,46 @@ form[name="term-lookup"] input {
   margin-bottom: 1em;
   font-weight: bold;
   display: block;
+}
+
+.meanings {
+  display: flex;
+  flex-direction: column;
+}
+
+.meaning {
+  display: flex;
+  flex-direction: row;
+}
+
+.meaning-ix {
+}
+.meaning-prose {
+}
+.meaning-aspect-container {
+  display: flex;
+  flex-direction: row;
+  align-items: end;
+}
+.meaning-aspect-container.sense {
+  color: #3A669C;
+}
+.meaning-aspect-container.part-of-speech {
+  color: #28A66D;
+}
+.meaning-aspect-container.dialect {
+  color: #B36A54;
+}
+.meaning-aspect-container.usage-domain {
+  color: #A65549;
+}
+.meaning-aspect {
+  font-size: small;
+  margin-left: 0.5em;
+}
+.meaning-aspect:after {
+  content: ", ";
+}
+.meaning-aspect:last-child:after {
+  content: "";
 }

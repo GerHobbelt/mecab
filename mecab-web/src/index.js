@@ -8,6 +8,8 @@ import { useState, useEffect } from '../web_modules/preact/hooks.js';
 
 import { Provider, connect, createStore } from '../web_modules/unistore/full/preact.es.js';
 
+import edict2Abbrev from './edict2/abbrev.js';
+
 import htm from '../web_modules/htm.js';
 const html = htm.bind(createElement);
 
@@ -315,15 +317,72 @@ const Definition = connect('termResults,languageTools', actions)(
       }))
       .filter(({ readingObjs }) => readingObjs.length);
 
+      function renderMeaning (meaning) {
+        return html`
+        <div class="meaning">
+          <div class="meaning-ix">
+          ${meaning.meaningIx}.\xA0<//>
+          <div class="meaning-prose">
+          ${meaning.prose}
+          <//>
+          ${meaning.tags.sense
+          && meaning.tags.sense.length
+          && html`
+            <div class="meaning-aspect-container sense">
+              ${meaning.tags.sense.map(sense => html`
+                <div class="meaning-aspect">
+                ${edict2Abbrev.sense[sense]}
+                <//>
+                `)}
+            <//>
+            ` || ''}
+          ${meaning.tags.partOfSpeech
+          && meaning.tags.partOfSpeech.length
+          && html`
+            <div class="meaning-aspect-container part-of-speech">
+              ${meaning.tags.partOfSpeech.map(partOfSpeech => html`
+                <div class="meaning-aspect">
+                ${edict2Abbrev.partOfSpeech[partOfSpeech]}
+                <//>
+                `)}
+            <//>
+            ` || ''}
+          ${meaning.tags.dialect
+          && html`
+            <div class="meaning-aspect-container dialect">
+              <div class="meaning-aspect">
+              ${edict2Abbrev.dialect[meaning.tags.dialect]}
+              <//>
+            <//>
+            ` || ''}
+          ${meaning.tags.usageDomain
+          && html`
+            <div class="meaning-aspect-container usage-domain">
+              <div class="meaning-aspect">
+              ${edict2Abbrev.usageDomain[meaning.tags.usageDomain]}
+              <//>
+            <//>
+            ` || ''}
+        <//>
+        `
+      };
+
+      console.log(result.result)
+
+      // <div>${result.result.line}<//>
+
       return html`
       <div class="hero-container">
         ${renderReading('hero-definition', bestHeadwordReading.headword, bestHeadwordReading.readingObj)}
-        <div>${result.result.meaning}<//>
-        <div>${result.result.line}<//>
+        <div class="meanings">${result.result.meaning.meanings.map(renderMeaning)}<//>
       <//>
-      <div class="alt-container">
+      ${remainingHeadwordReadings.length
+        && html`
+        <div class="alt-head">Additional readings<//>
+        <div class="alt-container">
         ${remainingHeadwordReadings.map(renderHeadwordReading.bind(null, 'alt-definition'))}
-      <//>
+        <//>
+        `|| ''}
       `;
     };
 
